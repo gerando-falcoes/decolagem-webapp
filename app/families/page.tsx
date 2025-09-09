@@ -1,7 +1,6 @@
 "use client"
 
 import { Header } from "@/components/layout/header"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { motion } from "framer-motion"
@@ -20,9 +19,9 @@ const families = [
 
 const statusConfig = {
   "Pobreza Extrema": { color: "red", label: "Pobreza Extrema" },
-  "Pobreza": { color: "orange", label: "Pobreza" },
-  "Dignidade": { color: "yellow", label: "Dignidade" },
-  "Prosperidade": { color: "blue", label: "Prosperidade" },
+  Pobreza: { color: "orange", label: "Pobreza" },
+  Dignidade: { color: "yellow", label: "Dignidade" },
+  Prosperidade: { color: "blue", label: "Prosperidade" },
   "Quebra de Ciclo": { color: "green", label: "Quebra de Ciclo" },
 }
 
@@ -65,9 +64,11 @@ export default function FamiliesPage() {
             <h1 className="text-3xl font-bold text-gray-800">Painel de Famílias</h1>
             <p className="text-gray-600 mt-1">Acompanhe o desenvolvimento e as metas de cada família.</p>
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
-            <Plus className="mr-2" /> Nova Família
-          </Button>
+          <Link href="/families/new">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
+              <Plus className="mr-2" /> Nova Família
+            </Button>
+          </Link>
         </motion.div>
 
         <motion.div
@@ -126,4 +127,9 @@ export default function FamiliesPage() {
 }
 
 // Mock Input component if not available
-const Input = (props) => <input {...props} className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow ${props.className}`} />;
+const Input = (props) => (
+  <input
+    {...props}
+    className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow ${props.className}`}
+  />
+)
