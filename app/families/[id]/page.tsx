@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { Header } from "@/components/layout/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -17,6 +18,7 @@ import {
   BarChart,
   Calendar,
 } from "lucide-react"
+import { MetaModal } from "@/components/families/meta-modal"
 
 // Mock Data
 const familyData = {
@@ -53,6 +55,8 @@ const itemVariants = {
 }
 
 export default function FamilyProfilePage() {
+  const [isMetaModalOpen, setIsMetaModalOpen] = useState(false)
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -69,7 +73,7 @@ export default function FamilyProfilePage() {
           </motion.div>
 
           <motion.div variants={itemVariants}>
-            <ProfileHeader data={familyData} />
+            <ProfileHeader data={familyData} onAddMeta={() => setIsMetaModalOpen(true)} />
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
@@ -95,13 +99,14 @@ export default function FamilyProfilePage() {
           </div>
         </motion.div>
       </main>
+      <MetaModal isOpen={isMetaModalOpen} onClose={() => setIsMetaModalOpen(false)} />
     </div>
   )
 }
 
 // --- Components ---
 
-const ProfileHeader = ({ data }) => (
+const ProfileHeader = ({ data, onAddMeta }) => (
   <Card className="overflow-hidden rounded-2xl shadow-md">
     <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-24" />
     <div className="p-6 flex items-center space-x-6 -mt-16">
@@ -118,7 +123,7 @@ const ProfileHeader = ({ data }) => (
       </div>
       <div className="ml-auto pt-16 flex space-x-2">
         <Button variant="outline">Nova Avaliação</Button>
-        <Button className="bg-green-500 hover:bg-green-600 text-white">
+        <Button className="bg-green-500 hover:bg-green-600 text-white" onClick={onAddMeta}>
           <Plus size={16} className="mr-2" /> Adicionar Meta
         </Button>
       </div>

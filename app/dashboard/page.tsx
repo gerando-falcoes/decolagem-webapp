@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { motion, useInView, useAnimation } from "framer-motion"
 import { useEffect, useRef } from "react"
+import Link from "next/link"
 import {
   Users,
   FileText,
@@ -204,8 +205,10 @@ const QuickActions = () => (
   <Card className="p-6 rounded-2xl shadow-md">
     <CardTitle className="text-lg font-semibold text-gray-800 mb-4">Ações Rápidas</CardTitle>
     <div className="space-y-3">
-      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
-        <Plus className="mr-2" /> Nova Família
+      <Button asChild className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
+        <Link href="/families/new">
+          <Plus className="mr-2" /> Nova Família
+        </Link>
       </Button>
       <Button
         variant="outline"
