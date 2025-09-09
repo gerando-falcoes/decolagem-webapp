@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { motion } from "framer-motion"
 import { LayoutGrid, Users, LogOut, Settings, Home } from "lucide-react"
-import Image from "next/image"
 
 export function Header() {
   return (
@@ -25,8 +24,7 @@ export function Header() {
       <div className="container mx-auto flex items-center justify-between h-20 px-6">
         <div className="flex items-center space-x-8">
           <Link href="/dashboard" className="flex items-center space-x-2">
-            <Image src="/placeholder-logo.svg" alt="Logo" width={32} height={32} />
-            <h1 className="text-2xl font-bold text-gray-800 tracking-tighter">Dignômetro</h1>
+            <h1 className="text-2xl font-bold text-gray-800 tracking-tighter">Decolagem</h1>
           </Link>
 
           <nav className="hidden md:flex items-center space-x-2 rounded-full bg-gray-100/80 p-1">

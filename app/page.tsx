@@ -38,7 +38,7 @@ export default function LoginPage() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-4xl font-bold text-gray-800 mb-3"
           >
-            Dignômetro
+            Decolagem
           </motion.h1>
           <motion.p
             initial={{ opacity: 0 }}

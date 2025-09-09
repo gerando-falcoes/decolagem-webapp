@@ -6,7 +6,7 @@ import "./globals.css"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Dignômetro - Sistema de Avaliação Familiar",
+  title: "Decolagem - Sistema de Avaliação Familiar",
   description: "Ferramenta para mentores avaliarem o nível de pobreza das famílias e definirem metas de progresso",
     generator: 'v0.app'
 }
