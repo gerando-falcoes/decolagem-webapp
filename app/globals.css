@@ -4,39 +4,34 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --background: #F9FAFB; /* Cinza Claro */
+  --foreground: #1F2937; /* Cinza Escuro */
+  --card: #FFFFFF;
+  --card-foreground: #1F2937;
+  --popover: #FFFFFF;
+  --popover-foreground: #1F2937;
+  --primary: #3B82F6; /* Azul Confiança */
+  --primary-foreground: #FFFFFF;
+  --secondary: #10B981; /* Verde Esperança */
+  --secondary-foreground: #FFFFFF;
+  --muted: #F3F4F6; /* Cinza um pouco mais escuro que o background */
+  --muted-foreground: #6B7280; /* Cinza Médio */
+  --accent: #F59E0B; /* Laranja Energia */
+  --accent-foreground: #FFFFFF;
+  --destructive: #EF4444; /* Vermelho para alertas */
+  --destructive-foreground: #FFFFFF;
+  --border: #E5E7EB; /* Borda suave */
+  --input: #E5E7EB;
+  --ring: #3B82F6; /* Azul Confiança para anéis de foco */
+
+  /* Cores da paleta para gráficos e elementos visuais */
+  --chart-1: #10B981; /* Verde Esperança */
+  --chart-2: #3B82F6; /* Azul Confiança */
+  --chart-3: #F59E0B; /* Laranja Energia */
+  --chart-4: #8B5CF6; /* Roxo Dignidade */
+  --chart-5: #EC4899; /* Rosa Cuidado */
+  
+  --radius: 0.75rem; /* Bordas um pouco mais arredondadas */
 }
 
 @theme inline {
@@ -106,10 +101,7 @@
   background: #a8a8a8;
 }
 
-/* Smooth transitions */
-* {
-  transition: all 0.2s ease-in-out;
-}
+
 
 /* Focus styles */
 button:focus,

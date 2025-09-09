@@ -1,275 +1,244 @@
+"use client"
+
 import { Header } from "@/components/layout/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Plus, FileText, Users, AlertTriangle } from "lucide-react"
+import { motion, useInView, useAnimation } from "framer-motion"
+import { useEffect, useRef } from "react"
+import {
+  Users,
+  FileText,
+  TrendingUp,
+  AlertTriangle,
+  Plus,
+  BarChart2,
+  PieChart,
+  Activity,
+} from "lucide-react"
+
+// Animation Variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1, delayChildren: 0.2 },
+  },
+}
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: { y: 0, opacity: 1, transition: { duration: 0.5, ease: "easeOut" } },
+}
+
+// Animated Counter Component
+function AnimatedCounter({ to }) {
+  const count = Math.round(to)
+  return <span className="tabular-nums">{count}</span>
+}
 
 export default function DashboardPage() {
   return (
-    <div className="min-h-screen bg-[#f7f7f7]">
+    <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <main className="p-6">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-[#374151]">Total de Famílias Cadastradas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-[#231e3d]">1.234</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-[#374151]">Número de Avaliações</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-[#231e3d]">567</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-[#374151]">Famílias Ativas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-[#231e3d]">890</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-[#374151]">Casos Pendentes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-red-500">3</div>
-            </CardContent>
-          </Card>
-        </div>
+      <main className="container mx-auto p-6">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+        >
+          <MetricCard
+            title="Total de Famílias"
+            value={1234}
+            icon={<Users className="text-blue-500" />}
+            color="blue"
+          />
+          <MetricCard
+            title="Avaliações Realizadas"
+            value={567}
+            icon={<FileText className="text-green-500" />}
+            color="green"
+          />
+          <MetricCard
+            title="Famílias Ativas"
+            value={890}
+            icon={<TrendingUp className="text-purple-500" />}
+            color="purple"
+          />
+          <MetricCard
+            title="Casos Pendentes"
+            value={3}
+            icon={<AlertTriangle className="text-orange-500" />}
+            color="orange"
+          />
+        </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Average Score */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[#231e3d]">Pontuação Média</CardTitle>
-              </CardHeader>
-              <CardContent className="flex items-center justify-between">
-                <div className="relative w-32 h-32">
-                  <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 120 120">
-                    <circle cx="60" cy="60" r="50" fill="none" stroke="#e5e7eb" strokeWidth="8" />
-                    <circle
-                      cx="60"
-                      cy="60"
-                      r="50"
-                      fill="none"
-                      stroke="#84cc16"
-                      strokeWidth="8"
-                      strokeDasharray={`${(7.8 / 10) * 314} 314`}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-[#231e3d]">7.8</div>
-                      <div className="text-sm text-[#374151]">/10</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex-1 ml-8">
-                  <p className="text-sm text-[#374151] mb-2">Média das avaliações mais recentes.</p>
-                  <div className="flex items-center text-green-600 text-sm">
-                    <span>↗ +5.4%</span>
-                    <span className="ml-2 text-[#374151]">vs. período anterior</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Dimension Metrics */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[#231e3d]">Médias por Dimensão</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-[#374151]">Moradia</span>
-                  <div className="flex items-center space-x-3 flex-1 ml-4">
-                    <Progress value={85} className="flex-1 h-2" />
-                    <span className="text-sm font-medium text-[#231e3d] w-8">8.5</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[#374151]">Saúde</span>
-                  <div className="flex items-center space-x-3 flex-1 ml-4">
-                    <Progress value={78} className="flex-1 h-2" />
-                    <span className="text-sm font-medium text-[#231e3d] w-8">7.8</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[#374151]">Renda</span>
-                  <div className="flex items-center space-x-3 flex-1 ml-4">
-                    <Progress value={62} className="flex-1 h-2" />
-                    <span className="text-sm font-medium text-[#231e3d] w-8">6.2</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[#374151]">Educação</span>
-                  <div className="flex items-center space-x-3 flex-1 ml-4">
-                    <Progress value={49} className="flex-1 h-2" />
-                    <span className="text-sm font-medium text-[#231e3d] w-8">4.9</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Distribution Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[#231e3d]">Distribuição por Nível de Dignidade</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-end justify-between h-48 space-x-2">
-                  {[
-                    { height: 60, color: "#ef4444" },
-                    { height: 45, color: "#f97316" },
-                    { height: 80, color: "#3b82f6" },
-                    { height: 70, color: "#10b981" },
-                    { height: 65, color: "#8b5cf6" },
-                    { height: 75, color: "#06b6d4" },
-                  ].map((bar, index) => (
-                    <div key={index} className="flex-1 flex flex-col items-center">
-                      <div
-                        className="w-full rounded-t"
-                        style={{
-                          height: `${bar.height}%`,
-                          backgroundColor: bar.color,
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-                <div className="flex items-center justify-center space-x-4 mt-4 text-sm">
-                  <div className="flex items-center space-x-1">
-                    <div className="w-3 h-3 bg-[#10b981] rounded"></div>
-                    <span>Excelente (≥8)</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <div className="w-3 h-3 bg-[#3b82f6] rounded"></div>
-                    <span>Bom (7-8)</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <div className="w-3 h-3 bg-[#f97316] rounded"></div>
-                    <span>Regular (5-6.9)</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <div className="w-3 h-3 bg-[#ef4444] rounded"></div>
-                    <span>Crítico (&lt;5)</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Recent Activities */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[#231e3d]">Atividades Recentes</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <FileText className="w-5 h-5 text-[#10b981]" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-[#231e3d]">Avaliação concluída para a família Silva</p>
-                    <p className="text-xs text-[#374151]">Mentor: Carlos Andrade</p>
-                  </div>
-                  <span className="text-xs text-[#374151]">20 de Julho de 2024</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Users className="w-5 h-5 text-[#3b82f6]" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-[#231e3d]">Nova família (Pereira) cadastrada</p>
-                    <p className="text-xs text-[#374151]">Responsável: Ana Pereira</p>
-                  </div>
-                  <span className="text-xs text-[#374151]">18 de Julho de 2024</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <AlertTriangle className="w-5 h-5 text-[#f97316]" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-[#231e3d]">
-                      Meta de emprego alcançada para a família Santos
-                    </p>
-                    <p className="text-xs text-[#374151]">Mentor: João Santos</p>
-                  </div>
-                  <span className="text-xs text-[#374151]">15 de Julho de 2024</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="lg:col-span-2 space-y-6"
+          >
+            <motion.div variants={itemVariants}>
+              <AverageScoreChart />
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <DimensionMetrics />
+            </motion.div>
+          </motion.div>
 
           {/* Right Column */}
-          <div className="space-y-6">
-            {/* Attention Points */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[#231e3d]">Pontos de Atenção</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <AlertTriangle className="w-4 h-4 text-red-500" />
-                    <span className="text-sm font-medium text-red-700">Educação</span>
-                  </div>
-                  <div className="text-right">
-                    <Button variant="link" size="sm" className="text-red-600 p-0 h-auto">
-                      Criar Meta
-                    </Button>
-                    <Button variant="link" size="sm" className="text-red-600 p-0 h-auto ml-2">
-                      Ver Famílias
-                    </Button>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <AlertTriangle className="w-4 h-4 text-yellow-500" />
-                    <span className="text-sm font-medium text-yellow-700">Renda</span>
-                  </div>
-                  <div className="text-right">
-                    <Button variant="link" size="sm" className="text-yellow-600 p-0 h-auto">
-                      Criar Meta
-                    </Button>
-                    <Button variant="link" size="sm" className="text-yellow-600 p-0 h-auto ml-2">
-                      Ver Famílias
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[#231e3d]">Ações Rápidas</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button className="w-full bg-[#590da5] hover:bg-[#4a0b87] text-white">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nova Família
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full border-[#590da5] text-[#590da5] hover:bg-[#590da5] hover:text-white bg-transparent"
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Nova Avaliação
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.7, delay: 0.5, ease: "easeOut" }}
+            className="space-y-6"
+          >
+            <QuickActions />
+            <RecentActivities />
+          </motion.div>
         </div>
       </main>
     </div>
   )
 }
+
+// --- Reusable Components for Dashboard ---
+
+const MetricCard = ({ title, value, icon, color }) => (
+  <motion.div
+    variants={itemVariants}
+    whileHover={{ y: -5, scale: 1.02, shadow: "lg" }}
+    className={`bg-white p-6 rounded-2xl shadow-md border-l-4 border-${color}-500 cursor-pointer`}
+  >
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm text-gray-500 mb-1">{title}</p>
+        <div className="text-3xl font-bold text-gray-800">
+          <AnimatedCounter to={value} />
+        </div>
+      </div>
+      <div className={`p-3 bg-${color}-100 rounded-full`}>{icon}</div>
+    </div>
+  </motion.div>
+)
+
+const AverageScoreChart = () => (
+  <Card className="p-6 rounded-2xl shadow-md">
+    <CardTitle className="text-lg font-semibold text-gray-800 mb-4">Pontuação Média Geral</CardTitle>
+    <div className="flex items-center justify-center space-x-8">
+      <div className="relative w-40 h-40">
+        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+          <motion.circle
+            cx="60"
+            cy="60"
+            r="54"
+            stroke="#E5E7EB"
+            strokeWidth="12"
+            fill="transparent"
+          />
+          <motion.circle
+            cx="60"
+            cy="60"
+            r="54"
+            stroke="#10B981"
+            strokeWidth="12"
+            fill="transparent"
+            strokeDasharray="339.292"
+            strokeDashoffset={339.292 - (339.292 * 7.8) / 10}
+            initial={{ strokeDashoffset: 339.292 }}
+            animate={{ strokeDashoffset: 339.292 - (339.292 * 7.8) / 10 }}
+            transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-4xl font-bold text-gray-800">7.8</span>
+          <span className="text-gray-500">/ 10</span>
+        </div>
+      </div>
+      <div>
+        <p className="text-green-600 font-semibold flex items-center">
+          <TrendingUp size={20} className="mr-1" /> +5.4% vs. mês anterior
+        </p>
+        <p className="text-gray-600 mt-2">Um progresso notável na jornada das famílias.</p>
+      </div>
+    </div>
+  </Card>
+)
+
+const DimensionMetrics = () => (
+  <Card className="p-6 rounded-2xl shadow-md">
+    <CardTitle className="text-lg font-semibold text-gray-800 mb-4">Médias por Dimensão</CardTitle>
+    <div className="space-y-4">
+      <ProgressItem label="Moradia" value={85} color="#3B82F6" />
+      <ProgressItem label="Saúde" value={78} color="#10B981" />
+      <ProgressItem label="Renda" value={62} color="#F59E0B" />
+      <ProgressItem label="Educação" value={49} color="#EC4899" />
+    </div>
+  </Card>
+)
+
+const ProgressItem = ({ label, value, color }) => (
+  <div>
+    <div className="flex justify-between items-center mb-1">
+      <span className="font-medium text-gray-700">{label}</span>
+      <span className="text-sm font-bold text-gray-800">{value} / 100</span>
+    </div>
+    <div className="w-full bg-gray-200 rounded-full h-2.5">
+      <motion.div
+        className="h-2.5 rounded-full"
+        style={{ backgroundColor: color }}
+        initial={{ width: 0 }}
+        animate={{ width: `${value}%` }}
+        transition={{ duration: 1.5, ease: "easeOut" }}
+      />
+    </div>
+  </div>
+)
+
+const QuickActions = () => (
+  <Card className="p-6 rounded-2xl shadow-md">
+    <CardTitle className="text-lg font-semibold text-gray-800 mb-4">Ações Rápidas</CardTitle>
+    <div className="space-y-3">
+      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
+        <Plus className="mr-2" /> Nova Família
+      </Button>
+      <Button
+        variant="outline"
+        className="w-full border-blue-600 text-blue-600 hover:bg-blue-50 hover:text-blue-700 font-bold py-3 rounded-lg transform hover:scale-105 transition-transform duration-300"
+      >
+        <FileText className="mr-2" /> Nova Avaliação
+      </Button>
+    </div>
+  </Card>
+)
+
+const RecentActivities = () => (
+  <Card className="p-6 rounded-2xl shadow-md">
+    <CardTitle className="text-lg font-semibold text-gray-800 mb-4">Atividades Recentes</CardTitle>
+    <ul className="space-y-4">
+      <li className="flex items-center space-x-3">
+        <div className="p-2 bg-green-100 rounded-full">
+          <Activity size={18} className="text-green-600" />
+        </div>
+        <p className="text-sm text-gray-600">Avaliação concluída para a família <span className="font-semibold">Silva</span>.</p>
+      </li>
+      <li className="flex items-center space-x-3">
+        <div className="p-2 bg-blue-100 rounded-full">
+          <Users size={18} className="text-blue-600" />
+        </div>
+        <p className="text-sm text-gray-600">Nova família <span className="font-semibold">Pereira</span> cadastrada.</p>
+      </li>
+      <li className="flex items-center space-x-3">
+        <div className="p-2 bg-purple-100 rounded-full">
+          <TrendingUp size={18} className="text-purple-600" />
+        </div>
+        <p className="text-sm text-gray-600">Meta de emprego alcançada pela família <span className="font-semibold">Santos</span>.</p>
+      </li>
+    </ul>
+  </Card>
+)

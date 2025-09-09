@@ -1,313 +1,230 @@
+"use client"
+
 import { Header } from "@/components/layout/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Phone, MessageCircle, Mail, MapPin, CheckCircle } from "lucide-react"
+import { motion } from "framer-motion"
+import Link from "next/link"
+import {
+  Phone,
+  Mail,
+  MapPin,
+  TrendingUp,
+  Target,
+  Plus,
+  ArrowLeft,
+  BarChart,
+  Calendar,
+} from "lucide-react"
+
+// Mock Data
+const familyData = {
+  name: "Família Silva",
+  status: "Dignidade",
+  score: 7.5,
+  mentor: "Carlos Mendes",
+  avatar: "/placeholder-user.jpg",
+  contact: {
+    phone: "+55 11 99999-8888",
+    email: "silva.family@email.com",
+    address: "Rua das Flores, 123 - Vila Esperança, São Paulo",
+  },
+  goals: [
+    { name: "Reforma do Banheiro", category: "Moradia", progress: 50, status: "Em Andamento" },
+    { name: "Curso Profissionalizante", category: "Renda", progress: 0, status: "A Fazer" },
+  ],
+  evaluationHistory: [
+    { date: "20 de Julho de 2024", score: 7.5, status: "Dignidade" },
+    { date: "15 de Abril de 2024", score: 7.2, status: "Dignidade" },
+    { date: "10 de Janeiro de 2024", score: 6.8, status: "Pobreza" },
+    { date: "05 de Outubro de 2023", score: 6.5, status: "Pobreza" },
+  ],
+}
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+}
 
 export default function FamilyProfilePage() {
   return (
-    <div className="min-h-screen bg-[#f7f7f7]">
+    <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <main className="p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <div className="flex items-center space-x-2 text-sm text-[#374151] mb-2">
-              <span>Famílias</span>
-              <span>/</span>
-              <span>Família Silva</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <h1 className="text-2xl font-bold text-[#231e3d]">Família Silva</h1>
-              <Badge className="bg-orange-100 text-orange-800">Pobreza Moderada</Badge>
-            </div>
+      <main className="container mx-auto p-6">
+        <motion.div initial="hidden" animate="visible" variants={containerVariants}>
+          <motion.div variants={itemVariants}>
+            <Button variant="outline" asChild className="mb-6">
+              <Link href="/families" className="flex items-center">
+                <ArrowLeft size={16} className="mr-2" />
+                Voltar para a lista
+              </Link>
+            </Button>
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <ProfileHeader data={familyData} />
+          </motion.div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+            {/* Left Column */}
+            <motion.div className="lg:col-span-2 space-y-6" variants={containerVariants}>
+              <motion.div variants={itemVariants}>
+                <EvaluationHistory history={familyData.evaluationHistory} />
+              </motion.div>
+              <motion.div variants={itemVariants}>
+                <GoalsList goals={familyData.goals} />
+              </motion.div>
+            </motion.div>
+
+            {/* Right Column */}
+            <motion.div className="space-y-6" variants={containerVariants}>
+              <motion.div variants={itemVariants}>
+                <DignometerScore score={familyData.score} status={familyData.status} />
+              </motion.div>
+              <motion.div variants={itemVariants}>
+                <ContactInfo contact={familyData.contact} />
+              </motion.div>
+            </motion.div>
           </div>
-          <div className="flex space-x-3">
-            <Button variant="outline">Voltar ao painel</Button>
-            <Button className="bg-[#590da5] hover:bg-[#4a0b87]">Iniciar nova avaliação</Button>
-            <Button className="bg-[#10b981] hover:bg-[#059669]">Adicionar meta</Button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column */}
-          <div className="space-y-6">
-            {/* Contact Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[#231e3d]">Informações de contato</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <Phone className="w-4 h-4 text-[#374151]" />
-                  <div>
-                    <p className="text-sm font-medium text-[#231e3d]">Telefone</p>
-                    <p className="text-sm text-[#374151]">+55 11 99999-8888</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <MessageCircle className="w-4 h-4 text-[#10b981]" />
-                  <div>
-                    <p className="text-sm font-medium text-[#231e3d]">WhatsApp</p>
-                    <p className="text-sm text-[#374151]">+55 11 99999-8888</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Mail className="w-4 h-4 text-[#590da5]" />
-                  <div>
-                    <p className="text-sm font-medium text-[#231e3d]">E-mail</p>
-                    <p className="text-sm text-[#374151]">silva.family@email.com</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Address */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[#231e3d]">Endereço</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-start space-x-3">
-                  <MapPin className="w-4 h-4 text-[#374151] mt-1" />
-                  <div>
-                    <p className="text-sm text-[#374151]">Endereço: Rua das Flores, 123 - Vila Esperança, São Paulo</p>
-                    <p className="text-sm text-[#374151] mt-2">
-                      <strong>Referência:</strong> Próximo ao mercado
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Socioeconomic Data */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[#231e3d]">Dados Socioeconômicos</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <p className="text-sm font-medium text-[#231e3d]">Faixa de renda</p>
-                  <p className="text-sm text-[#374151]">R$ 1 - R$ 500</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-[#231e3d]">Tamanho da família</p>
-                  <p className="text-sm text-[#374151]">4 pessoas</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-[#231e3d]">Crianças</p>
-                  <p className="text-sm text-[#374151]">2</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Registration */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[#231e3d]">Registro</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <p className="text-sm font-medium text-[#231e3d]">Cadastro criado em</p>
-                  <p className="text-sm text-[#374151]">15/04/2023</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-[#231e3d]">Última atualização</p>
-                  <p className="text-sm text-[#374151]">20/07/2024</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Middle Column */}
-          <div className="space-y-6">
-            {/* Dignity Meter */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[#231e3d]">Dignômetro da família</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center">
-                <div className="relative w-32 h-32 mx-auto mb-4">
-                  <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 120 120">
-                    <circle cx="60" cy="60" r="45" fill="none" stroke="#e5e7eb" strokeWidth="8" />
-                    <circle
-                      cx="60"
-                      cy="60"
-                      r="45"
-                      fill="none"
-                      stroke="#f97316"
-                      strokeWidth="8"
-                      strokeDasharray={`${(7.5 / 10) * 283} 283`}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-[#231e3d]">7.5</div>
-                      <div className="text-sm text-[#374151]">/10</div>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-sm font-medium text-orange-600">Pobreza Moderada</p>
-                <p className="text-xs text-[#374151] mt-1">Última avaliação em 20/07/2024</p>
-              </CardContent>
-            </Card>
-
-            {/* Evolution Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[#231e3d]">Evolução das avaliações</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-48 flex items-end justify-between">
-                  <div className="w-full h-full bg-gradient-to-t from-purple-100 to-purple-200 rounded relative">
-                    <div className="absolute bottom-0 left-0 right-0 h-3/4 bg-[#590da5] rounded-b"></div>
-                  </div>
-                </div>
-                <div className="mt-4 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-[#374151]">20/07/2024</span>
-                    <span className="font-medium text-[#231e3d]">Nota 75</span>
-                    <Badge className="bg-orange-100 text-orange-800">Moderada</Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#374151]">15/04/2024</span>
-                    <span className="font-medium text-[#231e3d]">Nota 72</span>
-                    <Badge className="bg-orange-100 text-orange-800">Moderada</Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#374151]">10/01/2024</span>
-                    <span className="font-medium text-[#231e3d]">Nota 68</span>
-                    <Badge className="bg-yellow-100 text-yellow-800">Vulnerável</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Latest Evaluation Responses */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[#231e3d]">Respostas da última avaliação</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="text-sm font-medium text-[#231e3d] mb-2">Saúde e Bem-estar</p>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-[#374151]">SA01 - Acesso a serviços de saúde</span>
-                      <span className="font-medium">90</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[#374151]">SA02 - Qualidade da alimentação</span>
-                      <span className="font-medium">94</span>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-[#231e3d] mb-2">Moradia</p>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-[#374151]">MO01 - Condições da habitação</span>
-                      <span className="font-medium">45</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[#374151]">MO02 - Acesso a saneamento básico</span>
-                      <span className="font-medium">35</span>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-xs text-[#374151] italic">
-                  * Notas de 0 a 100, onde 100 é a melhor avaliação possível
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Column */}
-          <div className="space-y-6">
-            {/* Family Goals */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[#231e3d]">Metas da família</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-[#231e3d]">Reforma do Banheiro</h4>
-                    <Badge className="bg-blue-100 text-blue-800">Em Andamento</Badge>
-                  </div>
-                  <p className="text-sm text-[#374151] mb-3">Categoria: Moradia</p>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Progresso: 50%</span>
-                      <span>Prazo: 31/12/2024</span>
-                    </div>
-                    <Progress value={50} className="h-2" />
-                  </div>
-                  <div className="flex space-x-2 mt-3">
-                    <Button variant="link" size="sm" className="text-[#590da5] p-0 h-auto">
-                      Ver detalhes
-                    </Button>
-                    <Button variant="link" size="sm" className="text-[#10b981] p-0 h-auto">
-                      Atualizar
-                    </Button>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-[#231e3d]">Curso Profissionalizante</h4>
-                    <Badge className="bg-gray-100 text-gray-800">A Fazer</Badge>
-                  </div>
-                  <p className="text-sm text-[#374151] mb-3">Categoria: Renda e Trabalho</p>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Progresso: 0%</span>
-                      <span>Prazo: 20/12/2024</span>
-                    </div>
-                    <Progress value={0} className="h-2" />
-                  </div>
-                  <div className="flex space-x-2 mt-3">
-                    <Button variant="link" size="sm" className="text-[#590da5] p-0 h-auto">
-                      Ver detalhes
-                    </Button>
-                    <Button variant="link" size="sm" className="text-[#10b981] p-0 h-auto">
-                      Atualizar
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Recent Activities */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[#231e3d]">Atividades Recentes</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-[#3b82f6] rounded-full mt-2"></div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-[#231e3d]">Nova avaliação realizada</p>
-                    <p className="text-xs text-[#374151]">Há 2 dias</p>
-                    <p className="text-xs text-[#374151]">A nota geral da família Silva subiu para 75</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <CheckCircle className="w-4 h-4 text-[#10b981] mt-1" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-[#231e3d]">Meta Reforma do Banheiro atualizada</p>
-                    <p className="text-xs text-[#374151]">Há 5 dias</p>
-                    <p className="text-xs text-[#374151]">Progresso atualizado para 50%</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+        </motion.div>
       </main>
     </div>
   )
 }
+
+// --- Components ---
+
+const ProfileHeader = ({ data }) => (
+  <Card className="overflow-hidden rounded-2xl shadow-md">
+    <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-24" />
+    <div className="p-6 flex items-center space-x-6 -mt-16">
+      <motion.div whileHover={{ scale: 1.1 }} transition={{ type: "spring", stiffness: 300 }}>
+        <img
+          src={data.avatar}
+          alt={data.name}
+          className="h-32 w-32 rounded-full border-4 border-white shadow-lg"
+        />
+      </motion.div>
+      <div className="pt-16">
+        <h1 className="text-3xl font-bold text-gray-800">{data.name}</h1>
+        <p className="text-gray-600">Mentor: {data.mentor}</p>
+      </div>
+      <div className="ml-auto pt-16 flex space-x-2">
+        <Button variant="outline">Nova Avaliação</Button>
+        <Button className="bg-green-500 hover:bg-green-600 text-white">
+          <Plus size={16} className="mr-2" /> Adicionar Meta
+        </Button>
+      </div>
+    </div>
+  </Card>
+)
+
+const DignometerScore = ({ score, status }) => (
+  <Card className="p-6 rounded-2xl shadow-md text-center">
+    <CardTitle className="text-lg font-semibold text-gray-800 mb-4">Dignômetro Atual</CardTitle>
+    <div className="relative w-40 h-40 mx-auto">
+      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+        <motion.circle cx="60" cy="60" r="54" stroke="#E5E7EB" strokeWidth="12" fill="transparent" />
+        <motion.circle
+          cx="60"
+          cy="60"
+          r="54"
+          stroke="#3B82F6"
+          strokeWidth="12"
+          fill="transparent"
+          strokeDasharray="339.292"
+          initial={{ strokeDashoffset: 339.292 }}
+          animate={{ strokeDashoffset: 339.292 - (339.292 * score) / 10 }}
+          transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-4xl font-bold text-gray-800">{score.toFixed(1)}</span>
+        <span className="text-gray-500">/ 10</span>
+      </div>
+    </div>
+    <Badge className="mt-4 bg-blue-100 text-blue-800 font-semibold">{status}</Badge>
+  </Card>
+)
+
+const EvaluationHistory = ({ history }) => (
+  <Card className="p-6 rounded-2xl shadow-md">
+    <CardTitle className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+      <BarChart size={20} className="mr-2 text-purple-500" />
+      Histórico de Avaliações
+    </CardTitle>
+    <ul className="space-y-4">
+      {history.map((item, index) => (
+        <motion.li
+          key={index}
+          variants={itemVariants}
+          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+        >
+          <div className="flex items-center space-x-3">
+            <Calendar size={16} className="text-gray-500" />
+            <span className="font-medium text-gray-700">{item.date}</span>
+          </div>
+          <div className="text-right">
+            <p className="font-bold text-gray-800">Nota: {item.score.toFixed(1)}</p>
+            <p className="text-sm text-gray-600">{item.status}</p>
+          </div>
+        </motion.li>
+      ))}
+    </ul>
+  </Card>
+)
+
+const GoalsList = ({ goals }) => (
+  <Card className="p-6 rounded-2xl shadow-md">
+    <CardTitle className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+      <Target size={20} className="mr-2 text-green-500" />
+      Metas da Família
+    </CardTitle>
+    <div className="space-y-6">
+      {goals.map((goal, index) => (
+        <div key={index}>
+          <div className="flex justify-between items-center mb-1">
+            <p className="font-semibold text-gray-700">{goal.name}</p>
+            <Badge className="bg-yellow-100 text-yellow-800 font-medium">{goal.status}</Badge>
+          </div>
+          <p className="text-sm text-gray-500 mb-2">{goal.category}</p>
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <motion.div
+              className="bg-green-500 h-2.5 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${goal.progress}%` }}
+              transition={{ duration: 1.5, ease: "easeOut" }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  </Card>
+)
+
+const ContactInfo = ({ contact }) => (
+  <Card className="p-6 rounded-2xl shadow-md">
+    <CardTitle className="text-lg font-semibold text-gray-800 mb-4">Contato</CardTitle>
+    <div className="space-y-4 text-sm">
+      <div className="flex items-center space-x-3">
+        <Phone size={16} className="text-gray-500" />
+        <span className="text-gray-700">{contact.phone}</span>
+      </div>
+      <div className="flex items-center space-x-3">
+        <Mail size={16} className="text-gray-500" />
+        <span className="text-gray-700">{contact.email}</span>
+      </div>
+      <div className="flex items-start space-x-3">
+        <MapPin size={16} className="text-gray-500 mt-1" />
+        <span className="text-gray-700">{contact.address}</span>
+      </div>
+    </div>
+  </Card>
+)
