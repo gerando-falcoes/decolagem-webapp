@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -11,9 +12,37 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { motion } from "framer-motion"
-import { LayoutGrid, Users, LogOut, Settings, Home } from "lucide-react"
+import { LayoutGrid, Users, LogOut, Settings, Home, Loader2 } from "lucide-react"
+import { AuthService, useAuth } from "@/lib/auth"
+import { useState } from "react"
 
 export function Header() {
+  const router = useRouter()
+  const { user } = useAuth()
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true)
+      await AuthService.logout()
+      
+      // O AuthGuard vai automaticamente redirecionar para "/" quando detectar que o usuário não está mais logado
+      console.log("Logout realizado com sucesso!")
+      
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error)
+      setIsLoggingOut(false) // Só reset se houver erro
+    }
+  }
+
+  // Extrair iniciais do usuário para o avatar
+  const getUserInitials = () => {
+    if (user?.email) {
+      return user.email.substring(0, 2).toUpperCase()
+    }
+    return "AS"
+  }
+
   return (
     <motion.header
       initial={{ y: -100, opacity: 0 }}
@@ -42,26 +71,57 @@ export function Header() {
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Avatar className="cursor-pointer h-10 w-10 border-2 border-transparent hover:border-blue-500 transition-colors">
                 <AvatarImage src="/placeholder-user.jpg" alt="User" />
-                <AvatarFallback className="bg-blue-500 text-white font-bold">AS</AvatarFallback>
+                <AvatarFallback className="bg-blue-500 text-white font-bold">
+                  {getUserInitials()}
+                </AvatarFallback>
               </Avatar>
             </motion.div>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 mt-2">
-            <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">Minha Conta</p>
+                {user?.email && (
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {user.email}
+                  </p>
+                )}
+              </div>
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            
             <DropdownMenuItem asChild>
-              <Link href="/dashboard" className="flex items-center">
-                <Home size={16} className="mr-2" /> Início
+              <Link href="/dashboard" className="flex items-center cursor-pointer">
+                <Home size={16} className="mr-2" /> 
+                Início
               </Link>
             </DropdownMenuItem>
+            
             <DropdownMenuItem asChild>
-              <Link href="/settings" className="flex items-center">
-                <Settings size={16} className="mr-2" /> Configurações
+              <Link href="/settings" className="flex items-center cursor-pointer">
+                <Settings size={16} className="mr-2" /> 
+                Configurações
               </Link>
             </DropdownMenuItem>
+            
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-500 focus:text-red-600 focus:bg-red-50">
-              <LogOut size={16} className="mr-2" /> Sair
+            
+            <DropdownMenuItem 
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="text-red-500 focus:text-red-600 focus:bg-red-50 cursor-pointer"
+            >
+              {isLoggingOut ? (
+                <>
+                  <Loader2 size={16} className="mr-2 animate-spin" />
+                  Saindo...
+                </>
+              ) : (
+                <>
+                  <LogOut size={16} className="mr-2" />
+                  Sair
+                </>
+              )}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

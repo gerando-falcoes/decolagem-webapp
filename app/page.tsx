@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import type React from "react"
 import { Button } from "@/components/ui/button"
@@ -8,19 +8,33 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { Eye, EyeOff } from "lucide-react"
+import { AuthService } from "@/lib/auth" // Importando o AuthService
 
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false) // Estado de Loading
+  const [error, setError] = useState("") // Estado de Erro
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Mock login logic
-    console.log("Attempting to log in with:", { email, password })
-    // On successful login, redirect to the dashboard
-    router.push("/dashboard")
+    setIsLoading(true)
+    setError("")
+
+    try {
+      const user = await AuthService.login(email, password)
+      if (user) {
+        router.push("/dashboard") // Redireciona em caso de sucesso
+      } else {
+        setError("Email ou senha incorretos.")
+      }
+    } catch (err) {
+      setError("Erro inesperado. Tente novamente.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -46,11 +60,20 @@ export default function LoginPage() {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="text-gray-600"
           >
-            Bem-vindo(a) de volta!
+            Bem-vindo(a) de volta, mentor(a)!
           </motion.p>
         </div>
 
         <form className="space-y-6" onSubmit={handleLogin}>
+          {error && (
+              <motion.div 
+                initial={{opacity: 0, y: -10}}
+                animate={{opacity: 1, y: 0}}
+                className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded text-center text-sm"
+              >
+                {error}
+              </motion.div>
+          )}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -115,9 +138,10 @@ export default function LoginPage() {
           >
             <Button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300"
+              disabled={isLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300 disabled:opacity-50 disabled:scale-100"
             >
-              Entrar
+              {isLoading ? 'Verificando...' : 'Entrar'}
             </Button>
           </motion.div>
         </form>

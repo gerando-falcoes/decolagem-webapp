@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { motion } from "framer-motion"
 import Link from "next/link"
-import { Plus, Search, ChevronRight } from "lucide-react"
+import { Plus, Search, ChevronRight, Link as LinkIcon } from "lucide-react"
 
 const families = [
   { id: 1, name: "Família Silva", score: 8.2, status: "Prosperidade", mentor: "Carlos Mendes" },
@@ -64,11 +64,19 @@ export default function FamiliesPage() {
             <h1 className="text-3xl font-bold text-gray-800">Painel de Famílias</h1>
             <p className="text-gray-600 mt-1">Acompanhe o desenvolvimento e as metas de cada família.</p>
           </div>
-          <Link href="/families/new">
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
-              <Plus className="mr-2" /> Nova Família
+          <div className="flex space-x-3">
+            <Button 
+              variant="outline" 
+              className="border-green-600 text-green-600 hover:bg-green-50 font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300"
+            >
+              <LinkIcon className="mr-2" /> Vincular Família
             </Button>
-          </Link>
+            <Link href="/families/new">
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
+                <Plus className="mr-2" /> Nova Família
+              </Button>
+            </Link>
+          </div>
         </motion.div>
 
         <motion.div
