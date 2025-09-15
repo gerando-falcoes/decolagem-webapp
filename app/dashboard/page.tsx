@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { motion, useInView, useAnimation } from "framer-motion"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
+import { supabaseBrowserClient } from "@/lib/supabase/browser"
 import {
   Users,
   FileText,
@@ -17,6 +18,57 @@ import {
   PieChart,
   Activity,
 } from "lucide-react"
+
+// Types
+interface DashboardData {
+  total_familias: number
+  avaliacoes_realizadas: number
+  pontuacao_media_geral: number | null
+  familias_ativas: number
+  nivel_pobreza_baixo: number
+  nivel_pobreza_medio: number
+  nivel_pobreza_alto: number
+  familias_com_avaliacao: number
+  tamanho_medio_familia: number
+  media_criancas_por_familia: number
+  ultima_atualizacao: string
+}
+
+// Custom hook to fetch dashboard data
+function useDashboardData() {
+  const [data, setData] = useState<DashboardData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const supabase = supabaseBrowserClient
+        const { data: dashboardData, error } = await supabase
+          .from('dashboard_indicators')
+          .select('*')
+          .order('ultima_atualizacao', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (error) {
+          setError(error.message)
+          return
+        }
+
+        setData(dashboardData)
+      } catch (err) {
+        setError('Erro ao carregar dados do dashboard')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  return { data, loading, error }
+}
 
 // Animation Variants
 const containerVariants = {
@@ -39,6 +91,43 @@ function AnimatedCounter({ to }) {
 }
 
 export default function DashboardPage() {
+  const { data, loading, error } = useDashboardData()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <main className="container mx-auto p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Carregando dados do dashboard...</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  if (error || !data) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <main className="container mx-auto p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="text-red-500 mb-4">❌</div>
+              <p className="text-red-600">Erro ao carregar dados: {error}</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  // Calcular casos pendentes (famílias que não têm avaliação)
+  const casosPendentes = data.total_familias - data.familias_com_avaliacao
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -52,43 +141,40 @@ export default function DashboardPage() {
         >
           <MetricCard
             title="Total de Famílias"
-            value={1234}
+            value={data.total_familias}
             icon={<Users className="text-blue-500" />}
             color="blue"
           />
           <MetricCard
             title="Avaliações Realizadas"
-            value={567}
+            value={data.avaliacoes_realizadas}
             icon={<FileText className="text-green-500" />}
             color="green"
           />
           <MetricCard
             title="Famílias Ativas"
-            value={890}
+            value={data.familias_ativas}
             icon={<TrendingUp className="text-purple-500" />}
             color="purple"
           />
           <MetricCard
             title="Casos Pendentes"
-            value={3}
+            value={casosPendentes}
             icon={<AlertTriangle className="text-orange-500" />}
             color="orange"
           />
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column */}
           <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="lg:col-span-2 space-y-6"
+            className="space-y-6"
           >
             <motion.div variants={itemVariants}>
-              <AverageScoreChart />
-            </motion.div>
-            <motion.div variants={itemVariants}>
-              <DimensionMetrics />
+              <AverageScoreChart pontuacaoMedia={data.pontuacao_media_geral} />
             </motion.div>
           </motion.div>
 
@@ -100,7 +186,7 @@ export default function DashboardPage() {
             className="space-y-6"
           >
             <QuickActions />
-            <RecentActivities />
+            <RecentActivities data={data} />
           </motion.div>
         </div>
       </main>
@@ -128,78 +214,65 @@ const MetricCard = ({ title, value, icon, color }) => (
   </motion.div>
 )
 
-const AverageScoreChart = () => (
-  <Card className="p-6 rounded-2xl shadow-md">
-    <CardTitle className="text-lg font-semibold text-gray-800 mb-4">Pontuação Média Geral</CardTitle>
-    <div className="flex items-center justify-center space-x-8">
-      <div className="relative w-40 h-40">
-        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
-          <motion.circle
-            cx="60"
-            cy="60"
-            r="54"
-            stroke="#E5E7EB"
-            strokeWidth="12"
-            fill="transparent"
-          />
-          <motion.circle
-            cx="60"
-            cy="60"
-            r="54"
-            stroke="#10B981"
-            strokeWidth="12"
-            fill="transparent"
-            strokeDasharray="339.292"
-            strokeDashoffset={339.292 - (339.292 * 7.8) / 10}
-            initial={{ strokeDashoffset: 339.292 }}
-            animate={{ strokeDashoffset: 339.292 - (339.292 * 7.8) / 10 }}
-            transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-4xl font-bold text-gray-800">7.8</span>
-          <span className="text-gray-500">/ 10</span>
+const AverageScoreChart = ({ pontuacaoMedia }: { pontuacaoMedia: number | null }) => {
+  const score = pontuacaoMedia || 0
+  const scoreFormatted = pontuacaoMedia ? score.toFixed(1) : "N/A"
+  
+  return (
+    <Card className="p-6 rounded-2xl shadow-md">
+      <CardTitle className="text-lg font-semibold text-gray-800 mb-4">Pontuação Média Geral</CardTitle>
+      <div className="flex items-center justify-center space-x-8">
+        <div className="relative w-40 h-40">
+          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+            <motion.circle
+              cx="60"
+              cy="60"
+              r="54"
+              stroke="#E5E7EB"
+              strokeWidth="12"
+              fill="transparent"
+            />
+            <motion.circle
+              cx="60"
+              cy="60"
+              r="54"
+              stroke={pontuacaoMedia ? "#10B981" : "#9CA3AF"}
+              strokeWidth="12"
+              fill="transparent"
+              strokeDasharray="339.292"
+              strokeDashoffset={339.292 - (339.292 * score) / 10}
+              initial={{ strokeDashoffset: 339.292 }}
+              animate={{ strokeDashoffset: 339.292 - (339.292 * score) / 10 }}
+              transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-4xl font-bold text-gray-800">{scoreFormatted}</span>
+            <span className="text-gray-500">/ 10</span>
+          </div>
+        </div>
+        <div>
+          {pontuacaoMedia ? (
+            <>
+              <p className="text-blue-600 font-semibold flex items-center">
+                <TrendingUp size={20} className="mr-1" /> Pontuação atual
+              </p>
+              <p className="text-gray-600 mt-2">Baseado nas avaliações realizadas.</p>
+            </>
+          ) : (
+            <>
+              <p className="text-gray-600 font-semibold flex items-center">
+                <TrendingUp size={20} className="mr-1" /> Sem dados suficientes
+              </p>
+              <p className="text-gray-600 mt-2">Realize mais avaliações para ver a pontuação média.</p>
+            </>
+          )}
         </div>
       </div>
-      <div>
-        <p className="text-green-600 font-semibold flex items-center">
-          <TrendingUp size={20} className="mr-1" /> +5.4% vs. mês anterior
-        </p>
-        <p className="text-gray-600 mt-2">Um progresso notável na jornada das famílias.</p>
-      </div>
-    </div>
-  </Card>
-)
+    </Card>
+  )
+}
 
-const DimensionMetrics = () => (
-  <Card className="p-6 rounded-2xl shadow-md">
-    <CardTitle className="text-lg font-semibold text-gray-800 mb-4">Médias por Dimensão</CardTitle>
-    <div className="space-y-4">
-      <ProgressItem label="Moradia" value={85} color="#3B82F6" />
-      <ProgressItem label="Saúde" value={78} color="#10B981" />
-      <ProgressItem label="Renda" value={62} color="#F59E0B" />
-      <ProgressItem label="Educação" value={49} color="#EC4899" />
-    </div>
-  </Card>
-)
-
-const ProgressItem = ({ label, value, color }) => (
-  <div>
-    <div className="flex justify-between items-center mb-1">
-      <span className="font-medium text-gray-700">{label}</span>
-      <span className="text-sm font-bold text-gray-800">{value} / 100</span>
-    </div>
-    <div className="w-full bg-gray-200 rounded-full h-2.5">
-      <motion.div
-        className="h-2.5 rounded-full"
-        style={{ backgroundColor: color }}
-        initial={{ width: 0 }}
-        animate={{ width: `${value}%` }}
-        transition={{ duration: 1.5, ease: "easeOut" }}
-      />
-    </div>
-  </div>
-)
 
 const QuickActions = () => (
   <Card className="p-6 rounded-2xl shadow-md">
@@ -220,28 +293,62 @@ const QuickActions = () => (
   </Card>
 )
 
-const RecentActivities = () => (
+const RecentActivities = ({ data }: { data: DashboardData }) => (
   <Card className="p-6 rounded-2xl shadow-md">
-    <CardTitle className="text-lg font-semibold text-gray-800 mb-4">Atividades Recentes</CardTitle>
-    <ul className="space-y-4">
-      <li className="flex items-center space-x-3">
-        <div className="p-2 bg-green-100 rounded-full">
-          <Activity size={18} className="text-green-600" />
+    <CardTitle className="text-lg font-semibold text-gray-800 mb-4">Métricas Adicionais</CardTitle>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 bg-blue-100 rounded-full">
+            <Users size={18} className="text-blue-600" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-gray-800">Tamanho Médio da Família</p>
+            <p className="text-xs text-gray-600">Por família cadastrada</p>
+          </div>
         </div>
-        <p className="text-sm text-gray-600">Avaliação concluída para a família <span className="font-semibold">Silva</span>.</p>
-      </li>
-      <li className="flex items-center space-x-3">
-        <div className="p-2 bg-blue-100 rounded-full">
-          <Users size={18} className="text-blue-600" />
+        <span className="text-lg font-bold text-blue-600">{Number(data.tamanho_medio_familia).toFixed(1)}</span>
+      </div>
+      
+      <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 bg-green-100 rounded-full">
+            <Activity size={18} className="text-green-600" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-gray-800">Média de Crianças</p>
+            <p className="text-xs text-gray-600">Por família</p>
+          </div>
         </div>
-        <p className="text-sm text-gray-600">Nova família <span className="font-semibold">Pereira</span> cadastrada.</p>
-      </li>
-      <li className="flex items-center space-x-3">
-        <div className="p-2 bg-purple-100 rounded-full">
-          <TrendingUp size={18} className="text-purple-600" />
+        <span className="text-lg font-bold text-green-600">{Number(data.media_criancas_por_familia).toFixed(1)}</span>
+      </div>
+
+      <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 bg-purple-100 rounded-full">
+            <FileText size={18} className="text-purple-600" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-gray-800">Taxa de Avaliação</p>
+            <p className="text-xs text-gray-600">Famílias avaliadas / total</p>
+          </div>
         </div>
-        <p className="text-sm text-gray-600">Meta de emprego alcançada pela família <span className="font-semibold">Santos</span>.</p>
-      </li>
-    </ul>
+        <span className="text-lg font-bold text-purple-600">
+          {((data.familias_com_avaliacao / data.total_familias) * 100).toFixed(1)}%
+        </span>
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-gray-200">
+        <p className="text-xs text-gray-500">
+          Última atualização: {new Date(data.ultima_atualizacao).toLocaleDateString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}
+        </p>
+      </div>
+    </div>
   </Card>
 )
