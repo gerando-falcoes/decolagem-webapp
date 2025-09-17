@@ -8,40 +8,31 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export async function GET() {
   try {
-    console.log('🔍 API: Buscando todas as famílias para a tabela...')
+    console.log('🔍 API: Buscando todas as famílias da view vw_families_overview...')
 
-    // Buscar todas as famílias diretamente (sem filtros como a API disponíveis)
+    // Buscar dados da view vw_families_overview que contém as informações corretas
     const { data: familiesData, error: familiesError } = await supabase
-      .from('families')
-      .select('id, name, phone, whatsapp, email, city, state, mentor_email, status, created_at')
-      .order('name')
+      .from('vw_families_overview')
+      .select('family_id, FAMILIA, DIGNOMETRO, STATUS, MENTOR')
+      .order('FAMILIA')
 
     if (familiesError) {
-      console.error('❌ API: Erro ao buscar famílias:', familiesError)
+      console.error('❌ API: Erro ao buscar famílias da view:', familiesError)
       return NextResponse.json({ error: familiesError.message }, { status: 500 })
     }
 
-    console.log('✅ API: Dados das famílias encontrados:', familiesData?.length)
+    console.log('✅ API: Dados das famílias encontrados na view:', familiesData?.length)
     
-    // Mapear para o formato esperado da tabela
-    const formattedFamilies = familiesData?.map(family => {
-      // Extrair nome do mentor (parte antes do @) se existir
-      let mentorDisplay = '--'
-      if (family.mentor_email && family.mentor_email.trim() !== '') {
-        const mentorName = family.mentor_email.split('@')[0]
-        mentorDisplay = mentorName.charAt(0).toUpperCase() + mentorName.slice(1)
-      }
-      
-      return {
-        family_id: family.id,
-        FAMILIA: family.name || 'Nome não informado',
-        MENTOR: mentorDisplay,
-        STATUS: family.status || 'Não Avaliado',
-        DIGNOMETRO: null
-      }
-    }) || []
+    // Os dados já vêm no formato correto da view, apenas garantir que campos nulos sejam tratados
+    const formattedFamilies = familiesData?.map(family => ({
+      family_id: family.family_id,
+      FAMILIA: family.FAMILIA || 'Nome não informado',
+      MENTOR: family.MENTOR || '--',
+      STATUS: family.STATUS || null, // Manter null para ser tratado pelo componente como "Não Avaliado"
+      DIGNOMETRO: family.DIGNOMETRO
+    })) || []
 
-    console.log(`📊 API: Retornando ${formattedFamilies.length} famílias formatadas`)
+    console.log(`📊 API: Retornando ${formattedFamilies.length} famílias da view vw_families_overview`)
 
     return NextResponse.json({ families: formattedFamilies })
 
