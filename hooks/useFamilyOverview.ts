@@ -64,35 +64,40 @@ export function useFamilyOverview() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    async function fetchFamilies() {
-      try {
-        setLoading(true)
-        setError(null)
+  const fetchFamilies = async () => {
+    try {
+      setLoading(true)
+      setError(null)
 
-        const { data, error } = await supabaseBrowserClient
-          .from('family_overview')
-          .select('*')
-          .order('family_name')
+      const { data, error } = await supabaseBrowserClient
+        .from('family_overview')
+        .select('*')
+        .order('family_name')
 
-        if (error) {
-          setError(error.message)
-          return
-        }
-
-        setFamilies(data || [])
-      } catch (err) {
-        setError('Erro ao carregar famílias')
-        console.error('Erro ao buscar famílias:', err)
-      } finally {
-        setLoading(false)
+      if (error) {
+        setError(error.message)
+        return
       }
-    }
 
+      // Corrigir mentor_name quando não há mentor_email
+      const correctedData = (data || []).map(family => ({
+        ...family,
+        mentor_name: family.mentor_email ? family.mentor_name : 'Sem mentor'
+      }))
+      setFamilies(correctedData)
+    } catch (err) {
+      setError('Erro ao carregar famílias')
+      console.error('Erro ao buscar famílias:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     fetchFamilies()
   }, [])
 
-  return { families, loading, error, refetch: () => fetchFamilies() }
+  return { families, loading, error, refetch: fetchFamilies }
 }
 
 // Hook para buscar uma família específica
@@ -101,42 +106,47 @@ export function useFamilyById(familyId: string | null) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
+  const fetchFamily = async () => {
     if (!familyId) {
       setFamily(null)
       setLoading(false)
       return
     }
 
-    async function fetchFamily() {
-      try {
-        setLoading(true)
-        setError(null)
+    try {
+      setLoading(true)
+      setError(null)
 
-        const { data, error } = await supabaseBrowserClient
-          .from('family_overview')
-          .select('*')
-          .eq('family_id', familyId)
-          .single()
+      const { data, error } = await supabaseBrowserClient
+        .from('family_overview')
+        .select('*')
+        .eq('family_id', familyId)
+        .single()
 
-        if (error) {
-          setError(error.message)
-          return
-        }
-
-        setFamily(data)
-      } catch (err) {
-        setError('Erro ao carregar família')
-        console.error('Erro ao buscar família:', err)
-      } finally {
-        setLoading(false)
+      if (error) {
+        setError(error.message)
+        return
       }
-    }
 
+      // Corrigir mentor_name quando não há mentor_email
+      const correctedData = data ? {
+        ...data,
+        mentor_name: data.mentor_email ? data.mentor_name : 'Sem mentor'
+      } : data
+      setFamily(correctedData)
+    } catch (err) {
+      setError('Erro ao carregar família')
+      console.error('Erro ao buscar família:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     fetchFamily()
   }, [familyId])
 
-  return { family, loading, error, refetch: () => fetchFamily() }
+  return { family, loading, error, refetch: fetchFamily }
 }
 
 // Hook para buscar estatísticas do dashboard
@@ -153,57 +163,63 @@ export function useFamilyStatistics() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    async function fetchStats() {
-      try {
-        setLoading(true)
-        setError(null)
+  const fetchStats = async () => {
+    try {
+      setLoading(true)
+      setError(null)
 
-        // Query para estatísticas agregadas
-        const { data, error } = await supabaseBrowserClient
-          .rpc('get_family_statistics')
-          .single()
+      // Query para estatísticas agregadas
+      const { data, error } = await supabaseBrowserClient
+        .rpc('get_family_statistics')
+        .single()
 
-        if (error) {
-          // Se a função RPC não existir, fazer a query manualmente
-          const { data: families, error: familiesError } = await supabaseBrowserClient
-            .from('family_overview')
-            .select('*')
+      if (error) {
+        // Se a função RPC não existir, fazer a query manualmente
+        const { data: families, error: familiesError } = await supabaseBrowserClient
+          .from('family_overview')
+          .select('*')
 
-          if (familiesError) {
-            setError(familiesError.message)
-            return
-          }
-
-          // Calcular estatísticas manualmente
-          const stats = {
-            total_families: families.length,
-            families_assessed: families.filter(f => f.assessment_status === 'Avaliado').length,
-            families_with_mentor: families.filter(f => f.has_active_mentor).length,
-            families_with_active_goals: families.filter(f => f.has_active_goals).length,
-            avg_poverty_score: families.length > 0 
-              ? families.reduce((sum, f) => sum + (f.current_poverty_score || 0), 0) / families.length 
-              : null,
-            families_in_dignity: families.filter(f => f.dignity_classification === 'Dignidade').length,
-            families_in_poverty: families.filter(f => f.dignity_classification === 'Pobreza').length,
-          }
-
-          setStats(stats)
-        } else {
-          setStats(data)
+        if (familiesError) {
+          setError(familiesError.message)
+          return
         }
-      } catch (err) {
-        setError('Erro ao carregar estatísticas')
-        console.error('Erro ao buscar estatísticas:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
 
+        // Corrigir mentor_name quando não há mentor_email
+        const correctedFamilies = (families || []).map(family => ({
+          ...family,
+          mentor_name: family.mentor_email ? family.mentor_name : 'Sem mentor'
+        }))
+
+        // Calcular estatísticas manualmente
+        const stats = {
+          total_families: correctedFamilies.length,
+          families_assessed: correctedFamilies.filter(f => f.assessment_status === 'Avaliado').length,
+          families_with_mentor: correctedFamilies.filter(f => f.has_active_mentor).length,
+          families_with_active_goals: correctedFamilies.filter(f => f.has_active_goals).length,
+          avg_poverty_score: correctedFamilies.length > 0 
+            ? correctedFamilies.reduce((sum, f) => sum + (f.current_poverty_score || 0), 0) / correctedFamilies.length 
+            : null,
+          families_in_dignity: correctedFamilies.filter(f => f.dignity_classification === 'Dignidade').length,
+          families_in_poverty: correctedFamilies.filter(f => f.dignity_classification === 'Pobreza').length,
+        }
+
+        setStats(stats)
+      } else {
+        setStats(data)
+      }
+    } catch (err) {
+      setError('Erro ao carregar estatísticas')
+      console.error('Erro ao buscar estatísticas:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     fetchStats()
   }, [])
 
-  return { stats, loading, error, refetch: () => fetchStats() }
+  return { stats, loading, error, refetch: fetchStats }
 }
 
 // Hook para buscar famílias que precisam de atenção
@@ -212,39 +228,44 @@ export function useFamiliesNeedingAttention() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    async function fetchFamilies() {
-      try {
-        setLoading(true)
-        setError(null)
+  const fetchFamilies = async () => {
+    try {
+      setLoading(true)
+      setError(null)
 
-        const { data, error } = await supabaseBrowserClient
-          .from('family_overview')
-          .select('*')
-          .or(`assessment_status.eq.Não Avaliado,has_active_mentor.eq.false,days_since_last_assessment.gt.90`)
-          .order('days_since_last_assessment', { ascending: false, nullsLast: true })
+      const { data, error } = await supabaseBrowserClient
+        .from('family_overview')
+        .select('*')
+        .or(`assessment_status.eq.Não Avaliado,has_active_mentor.eq.false,days_since_last_assessment.gt.90`)
+        .order('days_since_last_assessment', { ascending: false, nullsFirst: false })
 
-        if (error) {
-          setError(error.message)
-          return
-        }
-
-        setFamilies(data || [])
-      } catch (err) {
-        setError('Erro ao carregar famílias que precisam de atenção')
-        console.error('Erro:', err)
-      } finally {
-        setLoading(false)
+      if (error) {
+        setError(error.message)
+        return
       }
-    }
 
+      // Corrigir mentor_name quando não há mentor_email
+      const correctedData = (data || []).map(family => ({
+        ...family,
+        mentor_name: family.mentor_email ? family.mentor_name : 'Sem mentor'
+      }))
+      setFamilies(correctedData)
+    } catch (err) {
+      setError('Erro ao carregar famílias que precisam de atenção')
+      console.error('Erro:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     fetchFamilies()
   }, [])
 
-  return { families, loading, error, refetch: () => fetchFamilies() }
+  return { families, loading, error, refetch: fetchFamilies }
 }
 
-// Função auxiliar para formattar endereço
+// Função auxiliar para formatrar endereço
 export function formatAddress(family: FamilyOverview): string {
   const parts = [
     family.full_address,
