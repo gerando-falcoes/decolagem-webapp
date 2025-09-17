@@ -1,22 +1,35 @@
-import { supabaseServerClient } from "@/lib/supabase/server";
+"use client"
+
+import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { VincularFamiliaModal } from "@/components/families/vincular-familia-modal";
 import Link from "next/link";
 import { Plus, Search, ChevronRight, Link as LinkIcon } from "lucide-react";
-import { Input } from "@/components/ui/input"; // Assuming Input is in ui
+import { Input } from "@/components/ui/input";
+import { supabaseBrowserClient } from "@/lib/supabase/browser";
 
-// Fetch data directly on the server
+// Fetch data from API to ensure real-time updates
 async function getFamiliesData() {
-  const { data, error } = await supabaseServerClient
-    .from('vw_families_overview')
-    .select('*');
+  try {
+    console.log('🔍 Buscando dados das famílias via API...')
+    
+    const response = await fetch('/api/families')
+    
+    if (!response.ok) {
+      console.error('❌ Erro na API de famílias:', response.status)
+      return []
+    }
 
-  if (error) {
-    console.error('Error fetching families overview:', error);
-    return [];
+    const { families } = await response.json()
+    console.log('✅ Dados das famílias recebidos da API:', families?.length || 0)
+    
+    return families || []
+  } catch (error) {
+    console.error('❌ Erro ao buscar famílias via API:', error)
+    return []
   }
-  return data;
 }
 
 const statusConfig = {
@@ -41,8 +54,26 @@ const getStatusBadge = (status) => {
   return <Badge className={`font-semibold ${colors[config.color]}`}>{config.label}</Badge>;
 };
 
-export default async function FamiliesPage() {
-  const families = await getFamiliesData();
+export default function FamiliesPage() {
+  const [families, setFamilies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isVincularModalOpen, setIsVincularModalOpen] = useState(false);
+
+  useEffect(() => {
+    const loadFamilies = async () => {
+      setLoading(true);
+      const data = await getFamiliesData();
+      setFamilies(data);
+      setLoading(false);
+    };
+
+    loadFamilies();
+  }, []);
+
+  const handleVincularSuccess = () => {
+    // Recarregar a lista após vincular
+    getFamiliesData().then(setFamilies);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -57,6 +88,7 @@ export default async function FamiliesPage() {
           <div className="flex space-x-3">
             <Button 
               variant="outline" 
+              onClick={() => setIsVincularModalOpen(true)}
               className="border-green-600 text-green-600 hover:bg-green-50 font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300"
             >
               <LinkIcon className="mr-2" /> Vincular Família
@@ -78,42 +110,56 @@ export default async function FamiliesPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="p-4 font-semibold text-gray-600">FAMILIA</th>
-                  <th className="p-4 font-semibold text-gray-600">DIGNOMETRO</th>
-                  <th className="p-4 font-semibold text-gray-600">STATUS</th>
-                  <th className="p-4 font-semibold text-gray-600">MENTOR</th>
-                  <th className="p-4"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {families.map((family, index) => (
-                  <tr
-                    key={index} // Using index as key since view might not have a unique ID per row
-                    className="border-b border-gray-100 hover:bg-gray-50"
-                  >
-                    <td className="p-4 font-medium text-gray-800">{family.FAMILIA}</td>
-                    <td className="p-4 font-medium text-gray-700">{family.DIGNOMETRO ? family.DIGNOMETRO.toFixed(1) : "--"}</td>
-                    <td className="p-4">{getStatusBadge(family.STATUS)}</td>
-                    <td className="p-4 text-gray-600">{family.MENTOR || "--"}</td>
-                    <td className="p-4 text-right">
-                      {/* The link should ideally use a family ID if available from the view */}
-                      <Link href={`/families/${family.family_id}`}>
-                        <Button variant="ghost" size="icon" className="text-gray-500 hover:text-blue-600">
-                          <ChevronRight />
-                        </Button>
-                      </Link>
-                    </td>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              <span className="ml-3 text-gray-600">Carregando famílias...</span>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="p-4 font-semibold text-gray-600">FAMILIA</th>
+                    <th className="p-4 font-semibold text-gray-600">DIGNOMETRO</th>
+                    <th className="p-4 font-semibold text-gray-600">STATUS</th>
+                    <th className="p-4 font-semibold text-gray-600">MENTOR</th>
+                    <th className="p-4"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {families.map((family, index) => (
+                    <tr
+                      key={index} // Using index as key since view might not have a unique ID per row
+                      className="border-b border-gray-100 hover:bg-gray-50"
+                    >
+                      <td className="p-4 font-medium text-gray-800">{family.FAMILIA}</td>
+                      <td className="p-4 font-medium text-gray-700">{family.DIGNOMETRO ? family.DIGNOMETRO.toFixed(1) : "--"}</td>
+                      <td className="p-4">{getStatusBadge(family.STATUS)}</td>
+                      <td className="p-4 text-gray-600">{family.MENTOR || "--"}</td>
+                      <td className="p-4 text-right">
+                        {/* The link should ideally use a family ID if available from the view */}
+                        <Link href={`/families/${family.family_id}`}>
+                          <Button variant="ghost" size="icon" className="text-gray-500 hover:text-blue-600">
+                            <ChevronRight />
+                          </Button>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </main>
+
+      {/* Modal de Vincular Família */}
+      <VincularFamiliaModal
+        isOpen={isVincularModalOpen}
+        onClose={() => setIsVincularModalOpen(false)}
+        onSuccess={handleVincularSuccess}
+      />
     </div>
   );
 }

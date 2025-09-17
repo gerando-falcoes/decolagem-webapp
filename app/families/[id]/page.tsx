@@ -23,6 +23,8 @@ import {
 } from "lucide-react"
 import { MetaModal } from "@/components/families/meta-modal"
 import { useFamilyById, FamilyOverview } from "@/hooks/useFamilyOverview"
+import { useAuth } from "@/lib/auth"
+import { isMentorEmail } from "@/lib/mentor-utils"
 
 // Função para obter cor baseada na classificação
 const getClassificationColor = (classification: string) => {
@@ -50,10 +52,48 @@ const itemVariants = {
 
 export default function FamilyProfilePage() {
   const [isMetaModalOpen, setIsMetaModalOpen] = useState(false)
+  const [userIsMentor, setUserIsMentor] = useState(false)
+  const [checkingMentor, setCheckingMentor] = useState(true)
   const params = useParams()
   const familyId = params?.id as string
+  const { user } = useAuth()
   
   const { family, loading, error } = useFamilyById(familyId)
+
+  // Verificar se o usuário é mentor E se é mentor desta família
+  const isMentorOfFamily = userIsMentor && user?.email && family?.mentor_email === user.email
+
+  // Verificar se usuário é mentor no sistema
+  useEffect(() => {
+    async function checkMentorStatus() {
+      if (!user?.email) {
+        setUserIsMentor(false)
+        setCheckingMentor(false)
+        return
+      }
+
+      try {
+        const isMentor = await isMentorEmail(user.email)
+        setUserIsMentor(isMentor)
+      } catch (error) {
+        console.error('Erro ao verificar se usuário é mentor:', error)
+        setUserIsMentor(false)
+      } finally {
+        setCheckingMentor(false)
+      }
+    }
+
+    checkMentorStatus()
+  }, [user?.email])
+
+  // DEBUG: Log para verificar autenticação
+  console.log('🔍 Debug Autenticação:', {
+    userEmail: user?.email,
+    userIsMentor,
+    familyMentorEmail: family?.mentor_email,
+    isMentorOfFamily,
+    familyName: family?.family_name
+  })
 
   if (loading) {
     return (
@@ -106,7 +146,11 @@ export default function FamilyProfilePage() {
           </motion.div>
 
           <motion.div variants={itemVariants}>
-            <ProfileHeader family={family} onAddMeta={() => setIsMetaModalOpen(true)} />
+            <ProfileHeader 
+              family={family} 
+              onAddMeta={() => setIsMetaModalOpen(true)} 
+              isMentorOfFamily={isMentorOfFamily}
+            />
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
@@ -116,7 +160,7 @@ export default function FamilyProfilePage() {
                 <FamilyStats family={family} />
               </motion.div>
               <motion.div variants={itemVariants}>
-                <GoalsSummary family={family} />
+                <GoalsSummary family={family} isMentorOfFamily={isMentorOfFamily} onAddMeta={() => setIsMetaModalOpen(true)} />
               </motion.div>
             </motion.div>
 
@@ -139,7 +183,15 @@ export default function FamilyProfilePage() {
 
 // --- Components ---
 
-const ProfileHeader = ({ family, onAddMeta }: { family: FamilyOverview, onAddMeta: () => void }) => (
+const ProfileHeader = ({ 
+  family, 
+  onAddMeta, 
+  isMentorOfFamily 
+}: { 
+  family: FamilyOverview
+  onAddMeta: () => void
+  isMentorOfFamily: boolean 
+}) => (
   <Card className="overflow-hidden rounded-2xl shadow-md">
     <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-24" />
     <div className="p-6 flex items-center space-x-6 -mt-16">
@@ -176,9 +228,23 @@ const ProfileHeader = ({ family, onAddMeta }: { family: FamilyOverview, onAddMet
       </div>
       <div className="ml-auto pt-16 flex space-x-2">
         <Button variant="outline">Nova Avaliação</Button>
-        <Button className="bg-green-500 hover:bg-green-600 text-white" onClick={onAddMeta}>
-          <Plus size={16} className="mr-2" /> Adicionar Meta
-        </Button>
+        {isMentorOfFamily ? (
+          <Button className="bg-green-500 hover:bg-green-600 text-white" onClick={onAddMeta}>
+            <Plus size={16} className="mr-2" /> Adicionar Meta
+          </Button>
+        ) : (
+          <div className="flex flex-col items-end">
+            <Button disabled className="bg-gray-300 text-gray-500 cursor-not-allowed">
+              <Plus size={16} className="mr-2" /> Adicionar Meta
+            </Button>
+            <p className="text-xs text-gray-500 mt-1">
+              {family.has_active_mentor 
+                ? "Apenas o mentor pode adicionar metas"
+                : "Família precisa de um mentor"
+              }
+            </p>
+          </div>
+        )}
       </div>
     </div>
   </Card>
@@ -262,7 +328,15 @@ const FamilyStats = ({ family }: { family: FamilyOverview }) => (
   </Card>
 )
 
-const GoalsSummary = ({ family }: { family: FamilyOverview }) => (
+const GoalsSummary = ({ 
+  family, 
+  isMentorOfFamily, 
+  onAddMeta 
+}: { 
+  family: FamilyOverview
+  isMentorOfFamily: boolean
+  onAddMeta: () => void 
+}) => (
   <Card className="p-6 rounded-2xl shadow-md">
     <CardTitle className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
       <Target size={20} className="mr-2 text-green-500" />
@@ -314,10 +388,25 @@ const GoalsSummary = ({ family }: { family: FamilyOverview }) => (
         <Target size={48} className="mx-auto text-gray-400 mb-4" />
         <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma meta cadastrada</h3>
         <p className="text-gray-500 mb-4">Adicione metas para acompanhar o progresso da família.</p>
-        <Button size="sm" variant="outline">
-          <Plus size={16} className="mr-2" />
-          Adicionar primeira meta
-        </Button>
+        {isMentorOfFamily ? (
+          <Button size="sm" variant="outline" onClick={onAddMeta}>
+            <Plus size={16} className="mr-2" />
+            Adicionar primeira meta
+          </Button>
+        ) : (
+          <div className="text-center">
+            <Button size="sm" variant="outline" disabled className="bg-gray-100 text-gray-400 cursor-not-allowed">
+              <Plus size={16} className="mr-2" />
+              Adicionar primeira meta
+            </Button>
+            <p className="text-xs text-gray-400 mt-2">
+              {family.has_active_mentor 
+                ? "Apenas o mentor pode adicionar metas"
+                : "Família precisa de um mentor"
+              }
+            </p>
+          </div>
+        )}
       </div>
     )}
   </Card>
