@@ -23,6 +23,7 @@ import {
 } from "lucide-react"
 import { MetaModal } from "@/components/families/meta-modal"
 import { useFamilyById, FamilyOverview } from "@/hooks/useFamilyOverview"
+import { useFamilyGoals, getStatusColor, getStatusIcon, getTransitionButtonText, getNextStatus, getGoalDimension, formatDate } from "@/hooks/useFamilyGoals"
 import { useAuth } from "@/lib/auth"
 import { isMentorEmail } from "@/lib/mentor-utils"
 
@@ -176,7 +177,11 @@ export default function FamilyProfilePage() {
           </div>
         </motion.div>
       </main>
-      <MetaModal isOpen={isMetaModalOpen} onClose={() => setIsMetaModalOpen(false)} />
+      <MetaModal 
+        isOpen={isMetaModalOpen} 
+        onClose={() => setIsMetaModalOpen(false)} 
+        familyId={family.family_id}
+      />
     </div>
   )
 }
@@ -336,81 +341,237 @@ const GoalsSummary = ({
   family: FamilyOverview
   isMentorOfFamily: boolean
   onAddMeta: () => void 
-}) => (
-  <Card className="p-6 rounded-2xl shadow-md">
-    <CardTitle className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-      <Target size={20} className="mr-2 text-green-500" />
-      Resumo de Metas
-    </CardTitle>
-    
-    {family.total_goals > 0 ? (
-      <div className="space-y-4">
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div className="p-3 bg-green-50 rounded-lg">
-            <div className="text-xl font-bold text-green-600">{family.active_goals}</div>
-            <div className="text-xs text-gray-600">Ativas</div>
-          </div>
-          <div className="p-3 bg-blue-50 rounded-lg">
-            <div className="text-xl font-bold text-blue-600">{family.completed_goals}</div>
-            <div className="text-xs text-gray-600">Concluídas</div>
-          </div>
-          <div className="p-3 bg-yellow-50 rounded-lg">
-            <div className="text-xl font-bold text-yellow-600">{family.suggested_goals}</div>
-            <div className="text-xs text-gray-600">Sugeridas</div>
-          </div>
+}) => {
+  const { data: goalsData, loading, error, updateGoalStatus } = useFamilyGoals(family.family_id)
+  const [updatingGoalId, setUpdatingGoalId] = useState<string | null>(null)
+
+  const handleStatusTransition = async (goalId: string, currentStatus: string) => {
+    setUpdatingGoalId(goalId)
+    try {
+      const newStatus = getNextStatus(currentStatus)
+      await updateGoalStatus(goalId, newStatus)
+    } catch (error) {
+      console.error('Erro ao atualizar status:', error)
+    } finally {
+      setUpdatingGoalId(null)
+    }
+  }
+
+  return (
+    <Card className="p-6 rounded-2xl shadow-md">
+      <CardTitle className="text-lg font-semibold text-gray-800 mb-4 flex items-center justify-between">
+        <div className="flex items-center">
+          <Target size={20} className="mr-2 text-green-500" />
+          Resumo de Metas
         </div>
-        
-        <div className="mt-4">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-700">Progresso Médio</span>
-            <span className="text-sm font-bold text-gray-800">{family.avg_goal_progress.toFixed(0)}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <motion.div
-              className="bg-green-500 h-2.5 rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${family.avg_goal_progress}%` }}
-              transition={{ duration: 1.5, ease: "easeOut" }}
-            />
-          </div>
-        </div>
-        
-        {!family.has_active_goals && (
-          <div className="mt-4 p-3 bg-orange-50 border-l-4 border-orange-400 rounded">
-            <p className="text-orange-800 text-sm">
-              ⚠️ Nenhuma meta ativa no momento
-            </p>
-          </div>
-        )}
-      </div>
-    ) : (
-      <div className="text-center py-8">
-        <Target size={48} className="mx-auto text-gray-400 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma meta cadastrada</h3>
-        <p className="text-gray-500 mb-4">Adicione metas para acompanhar o progresso da família.</p>
-        {isMentorOfFamily ? (
-          <Button size="sm" variant="outline" onClick={onAddMeta}>
+        {isMentorOfFamily && (
+          <Button size="sm" onClick={onAddMeta}>
             <Plus size={16} className="mr-2" />
-            Adicionar primeira meta
+            Adicionar Meta
           </Button>
-        ) : (
-          <div className="text-center">
-            <Button size="sm" variant="outline" disabled className="bg-gray-100 text-gray-400 cursor-not-allowed">
+        )}
+      </CardTitle>
+      
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+          <span className="ml-2 text-gray-600">Carregando metas...</span>
+        </div>
+      ) : error ? (
+        <div className="text-center py-8">
+          <p className="text-red-600 mb-2">❌ Erro ao carregar metas</p>
+          <p className="text-sm text-gray-500">{error}</p>
+        </div>
+      ) : goalsData && goalsData.totalGoals > 0 ? (
+        <div className="space-y-6">
+          {/* Estatísticas resumidas - Conforme solicitado */}
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <div className="text-xl font-bold text-blue-600">{goalsData.activeGoals}</div>
+              <div className="text-xs text-gray-600">🎯 Ativas</div>
+              <div className="text-xs text-gray-500 mt-1">Sendo realizadas</div>
+            </div>
+            <div className="p-3 bg-green-50 rounded-lg">
+              <div className="text-xl font-bold text-green-600">{goalsData.completedGoals}</div>
+              <div className="text-xs text-gray-600">✅ Concluídas</div>
+              <div className="text-xs text-gray-500 mt-1">Finalizadas</div>
+            </div>
+            <div className="p-3 bg-yellow-50 rounded-lg">
+              <div className="text-xl font-bold text-yellow-600">{goalsData.suggestedGoals}</div>
+              <div className="text-xs text-gray-600">💡 Sugeridas</div>
+              <div className="text-xs text-gray-500 mt-1">Personalizadas</div>
+            </div>
+          </div>
+          
+          {/* Progresso médio */}
+          <div className="mt-4">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-gray-700">Progresso Médio</span>
+              <span className="text-sm font-bold text-gray-800">
+                {goalsData.goals.length > 0 
+                  ? Math.round(goalsData.goals.reduce((sum, goal) => sum + goal.progress_percentage, 0) / goalsData.goals.length)
+                  : 0
+                }%
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <motion.div
+                className="bg-green-500 h-2.5 rounded-full"
+                initial={{ width: 0 }}
+                animate={{ 
+                  width: `${goalsData.goals.length > 0 
+                    ? Math.round(goalsData.goals.reduce((sum, goal) => sum + goal.progress_percentage, 0) / goalsData.goals.length)
+                    : 0
+                  }%` 
+                }}
+                transition={{ duration: 1.5, ease: "easeOut" }}
+              />
+            </div>
+          </div>
+
+          {/* VISUALIZAÇÃO DETALHADA DAS METAS - Conforme solicitado */}
+          <div className="mt-6">
+            <h4 className="text-md font-medium text-gray-800 mb-4 flex items-center">
+              📋 Todas as Metas da Família
+              <Badge variant="outline" className="ml-2">{goalsData.totalGoals} total</Badge>
+            </h4>
+            
+            <div className="space-y-4">
+              {goalsData.goals.map((goal, index) => (
+                <motion.div 
+                  key={goal.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="border rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      {/* Título e Status */}
+                      <div className="flex items-center mb-2">
+                        <h5 className="font-medium text-gray-900 mr-3">{goal.goal_title}</h5>
+                        <Badge className={`${getStatusColor(goal.current_status)} border text-xs`}>
+                          {getStatusIcon(goal.current_status)} {goal.current_status}
+                        </Badge>
+                      </div>
+                      
+                      {/* Descrição/Categoria */}
+                      {goal.goal_category && (
+                        <p className="text-sm text-gray-600 mb-2">
+                          📝 <strong>Descrição:</strong> {goal.goal_category}
+                        </p>
+                      )}
+                      
+                      {/* Dimensão */}
+                      <p className="text-sm text-gray-600 mb-2">
+                        🎯 <strong>Dimensão:</strong> {getGoalDimension(goal)}
+                      </p>
+                      
+                      {/* Progresso */}
+                      <div className="mb-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm text-gray-600">
+                            📊 <strong>Progresso:</strong>
+                          </span>
+                          <span className="text-sm font-medium text-gray-800">
+                            {goal.progress_percentage}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${goal.progress_percentage}%` }}
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Informações adicionais */}
+                      <div className="grid grid-cols-2 gap-4 text-xs text-gray-500">
+                        <div>
+                          📅 <strong>Criada em:</strong> {formatDate(goal.created_at)}
+                        </div>
+                        {goal.target_date && (
+                          <div>
+                            🎯 <strong>Prazo:</strong> {formatDate(goal.target_date)}
+                          </div>
+                        )}
+                        {goal.source && (
+                          <div>
+                            🔗 <strong>Origem:</strong> {goal.source === 'manual' ? 'Personalizada' : 'Dignômetro'}
+                          </div>
+                        )}
+                        {goal.assessment_id && (
+                          <div>
+                            📊 <strong>Avaliação:</strong> Linked
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Botão de ação - apenas para mentores */}
+                    {isMentorOfFamily && (
+                      <div className="ml-4">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleStatusTransition(goal.id, goal.current_status)}
+                          disabled={updatingGoalId === goal.id}
+                          className="text-xs"
+                        >
+                          {updatingGoalId === goal.id ? (
+                            <div className="flex items-center">
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-1"></div>
+                              Atualizando...
+                            </div>
+                          ) : (
+                            getTransitionButtonText(goal.current_status)
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          {!goalsData.activeGoals && (
+            <div className="mt-4 p-3 bg-orange-50 border-l-4 border-orange-400 rounded">
+              <p className="text-orange-800 text-sm">
+                ⚠️ Nenhuma meta ativa no momento
+              </p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="text-center py-8">
+          <Target size={48} className="mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma meta cadastrada</h3>
+          <p className="text-gray-500 mb-4">Adicione metas para acompanhar o progresso da família.</p>
+          {isMentorOfFamily ? (
+            <Button size="sm" variant="outline" onClick={onAddMeta}>
               <Plus size={16} className="mr-2" />
               Adicionar primeira meta
             </Button>
-            <p className="text-xs text-gray-400 mt-2">
-              {family.has_active_mentor 
-                ? "Apenas o mentor pode adicionar metas"
-                : "Família precisa de um mentor"
-              }
-            </p>
-          </div>
-        )}
-      </div>
-    )}
-  </Card>
-)
+          ) : (
+            <div className="text-center">
+              <Button size="sm" variant="outline" disabled className="bg-gray-100 text-gray-400 cursor-not-allowed">
+                <Plus size={16} className="mr-2" />
+                Adicionar primeira meta
+              </Button>
+              <p className="text-xs text-gray-400 mt-2">
+                {family.has_active_mentor 
+                  ? "Apenas o mentor pode adicionar metas"
+                  : "Família precisa de um mentor"
+                }
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </Card>
+  )
+}
 
 const ContactInfo = ({ family }: { family: FamilyOverview }) => (
   <Card className="p-6 rounded-2xl shadow-md">
