@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { Header } from "@/components/layout/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -23,6 +24,8 @@ import {
   CheckCircle,
   Eye,
   Lightbulb,
+  Loader2,
+  AlertCircle,
 } from "lucide-react"
 
 // Reusable Form Section Component from the plan
@@ -117,6 +120,11 @@ const ProgressIndicator = ({ completedFields, totalFields }) => {
 };
 
 export default function NewFamilyPage() {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
+
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -146,10 +154,93 @@ export default function NewFamilyPage() {
   const handleInputChange = (e) => {
     const { id, value, type, checked } = e.target
     setFormData((prev) => ({ ...prev, [id]: type === 'checkbox' ? checked : value }))
+    // Limpar mensagens de erro/sucesso quando o usuário começar a editar
+    if (error) setError("")
+    if (success) setSuccess("")
   }
 
   const handleSelectChange = (id, value) => {
     setFormData((prev) => ({ ...prev, [id]: value }))
+    // Limpar mensagens de erro/sucesso quando o usuário começar a editar
+    if (error) setError("")
+    if (success) setSuccess("")
+  }
+
+  const validateForm = () => {
+    if (!formData.name.trim()) {
+      setError("Nome da família é obrigatório")
+      return false
+    }
+    if (!formData.email.trim()) {
+      setError("E-mail é obrigatório")
+      return false
+    }
+    if (!formData.password.trim()) {
+      setError("Senha é obrigatória")
+      return false
+    }
+    if (formData.password.length < 8) {
+      setError("A senha deve ter pelo menos 8 caracteres")
+      return false
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError("As senhas não coincidem")
+      return false
+    }
+    if (!formData.consent) {
+      setError("É necessário aceitar os termos de uso e política de privacidade")
+      return false
+    }
+    return true
+  }
+
+  const handleSubmit = async (e, redirectToDignometro = false) => {
+    e.preventDefault()
+    
+    if (!validateForm()) {
+      return
+    }
+
+    setIsLoading(true)
+    setError("")
+    setSuccess("")
+
+    try {
+      const response = await fetch('/api/families', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao cadastrar família')
+      }
+
+      if (redirectToDignometro) {
+        setSuccess('Família cadastrada! Redirecionando para o Dignômetro...')
+        
+        // Redirecionar para o Dignômetro com o ID da família
+        setTimeout(() => {
+          router.push(`/dignometro?familyId=${data.family.id}`)
+        }, 1500)
+      } else {
+        setSuccess('Família cadastrada com sucesso!')
+        
+        // Aguardar um pouco para mostrar a mensagem de sucesso
+        setTimeout(() => {
+          router.push('/families')
+        }, 2000)
+      }
+
+    } catch (err) {
+      setError(err.message || 'Erro ao cadastrar família')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -165,8 +256,23 @@ export default function NewFamilyPage() {
             <p className="text-gray-600 mt-1">Um processo mais claro e organizado para adicionar famílias.</p>
           </div>
 
+          {/* Mensagens de Erro e Sucesso */}
+          {error && (
+            <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center space-x-2">
+              <AlertCircle className="w-5 h-5" />
+              <span>{error}</span>
+            </div>
+          )}
+          
+          {success && (
+            <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center space-x-2">
+              <CheckCircle className="w-5 h-5" />
+              <span>{success}</span>
+            </div>
+          )}
+
           {/* Main Grid Layout */}
-          <form className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_340px] gap-8 items-start">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_340px] gap-8 items-start">
             {/* Form Sections Column 1 */}
             <div className="space-y-8">
               <FormSection title="Informações Gerais" icon={<Users />} isRequired>
@@ -210,7 +316,7 @@ export default function NewFamilyPage() {
                 <div>
                   <Label htmlFor="mentor">Mentor responsável</Label>
                   <div className="flex space-x-2 mt-1">
-                    <Select onValuecha_change={(value) => handleSelectChange("mentor", value)}>
+                    <Select onValueChange={(value) => handleSelectChange("mentor", value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
@@ -306,9 +412,43 @@ export default function NewFamilyPage() {
 
             {/* Action Buttons */}
             <div className="lg:col-span-3 mt-8 flex justify-end space-x-4 border-t pt-6">
-                <Button variant="outline">Cancelar</Button>
-                <Button className="bg-gray-800 hover:bg-gray-900 text-white">Salvar Família</Button>
-                <Button className="bg-green-600 hover:bg-green-700 text-white">Salvar e Enviar Dignômetro</Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => router.push('/families')}
+                  disabled={isLoading}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  type="submit" 
+                  className="bg-gray-800 hover:bg-gray-900 text-white"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Cadastrando...
+                    </>
+                  ) : (
+                    'Salvar Família'
+                  )}
+                </Button>
+                <Button 
+                  type="button" 
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  disabled={isLoading}
+                  onClick={(e) => handleSubmit(e, true)}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    'Salvar e Enviar Dignômetro'
+                  )}
+                </Button>
             </div>
           </form>
         </div>
