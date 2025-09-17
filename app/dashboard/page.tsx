@@ -8,6 +8,7 @@ import { motion, useInView, useAnimation } from "framer-motion"
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { supabaseBrowserClient } from "@/lib/supabase/browser"
+import WeeklyScoreChart from "@/components/dashboard/WeeklyScoreChart"
 import {
   Users,
   FileText,
@@ -174,7 +175,11 @@ export default function DashboardPage() {
             className="space-y-6"
           >
             <motion.div variants={itemVariants}>
-              <AverageScoreChart pontuacaoMedia={data.pontuacao_media_geral} />
+              <WeeklyScoreChart 
+                limit={12} 
+                autoRefresh={true}
+                className="mb-6"
+              />
             </motion.div>
           </motion.div>
 
@@ -185,9 +190,21 @@ export default function DashboardPage() {
             transition={{ duration: 0.7, delay: 0.5, ease: "easeOut" }}
             className="space-y-6"
           >
-            <RecentActivities data={data} />
+            <motion.div variants={itemVariants}>
+              <AverageScoreChart pontuacaoMedia={data.pontuacao_media_geral} />
+            </motion.div>
           </motion.div>
         </div>
+
+        {/* Bottom Section - Métricas Adicionais */}
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.7, ease: "easeOut" }}
+          className="mt-6"
+        >
+          <RecentActivities data={data} />
+        </motion.div>
       </main>
     </div>
   )
