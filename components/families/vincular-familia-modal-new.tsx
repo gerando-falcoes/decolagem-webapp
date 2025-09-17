@@ -345,7 +345,7 @@ export function VincularFamiliaModal({ isOpen, onClose, onSuccess }: VincularFam
               <Button 
                 onClick={handleVincularFamilia}
                 disabled={isLinking}
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="bg-green-600 hover:bg-green-500 text-white hover:text-white shadow-sm hover:shadow-md transition-all duration-200"
               >
                 {isLinking ? (
                   <>

@@ -226,11 +226,11 @@ export function MetaModal({ isOpen, onClose }) {
 
                 <DialogFooter className="p-6 bg-white border-t flex justify-between items-center">
                     {activeTab === 'suggested' ? (
-                        <Button disabled={selectedMetas.size === 0} className="bg-green-600 hover:bg-green-700">
+                        <Button disabled={selectedMetas.size === 0} className="bg-green-600 hover:bg-green-500 text-white hover:text-white shadow-sm hover:shadow-md transition-all duration-200">
                             <Plus className="w-4 h-4 mr-2" /> Adicionar {selectedMetas.size > 0 ? `${selectedMetas.size} Metas Selecionadas` : 'Metas'}
                         </Button>
                     ) : (
-                        <Button className="bg-green-600 hover:bg-green-700">
+                        <Button className="bg-green-600 hover:bg-green-500 text-white hover:text-white shadow-sm hover:shadow-md transition-all duration-200">
                             <Plus className="w-4 h-4 mr-2" /> Adicionar Meta Personalizada
                         </Button>
                     )}
