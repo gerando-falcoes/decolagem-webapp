@@ -185,7 +185,6 @@ export default function DashboardPage() {
             transition={{ duration: 0.7, delay: 0.5, ease: "easeOut" }}
             className="space-y-6"
           >
-            <QuickActions />
             <RecentActivities data={data} />
           </motion.div>
         </div>
@@ -274,24 +273,6 @@ const AverageScoreChart = ({ pontuacaoMedia }: { pontuacaoMedia: number | null }
 }
 
 
-const QuickActions = () => (
-  <Card className="p-6 rounded-2xl shadow-md">
-    <CardTitle className="text-lg font-semibold text-gray-800 mb-4">Ações Rápidas</CardTitle>
-    <div className="space-y-3">
-      <Button asChild className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
-        <Link href="/families/new">
-          <Plus className="mr-2" /> Nova Família
-        </Link>
-      </Button>
-      <Button
-        variant="outline"
-        className="w-full border-blue-600 text-blue-600 hover:bg-blue-50 hover:text-blue-700 font-bold py-3 rounded-lg transform hover:scale-105 transition-transform duration-300"
-      >
-        <FileText className="mr-2" /> Nova Avaliação
-      </Button>
-    </div>
-  </Card>
-)
 
 const RecentActivities = ({ data }: { data: DashboardData }) => (
   <Card className="p-6 rounded-2xl shadow-md">

@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { motion } from "framer-motion"
-import { LayoutGrid, Users, LogOut, Settings, Home, Loader2 } from "lucide-react"
+import { LayoutGrid, Users, LogOut, Settings, Home, Loader2, ChevronDown, Plus, List } from "lucide-react"
 import { AuthService, useAuth } from "@/lib/auth"
 import { useState } from "react"
 
@@ -60,9 +60,7 @@ export function Header() {
             <NavItem href="/dashboard" icon={<LayoutGrid size={18} />}>
               Dashboard
             </NavItem>
-            <NavItem href="/families" icon={<Users size={18} />}>
-              Famílias
-            </NavItem>
+            <FamiliesDropdown />
           </nav>
         </div>
 
@@ -129,6 +127,32 @@ export function Header() {
     </motion.header>
   )
 }
+
+const FamiliesDropdown = () => (
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <button className="flex items-center space-x-2 px-4 py-2 rounded-full text-gray-600 hover:bg-white hover:text-blue-600 transition-colors duration-200 shadow-sm group">
+        <Users size={18} />
+        <span className="font-medium">Famílias</span>
+        <ChevronDown size={14} className="transition-transform group-hover:rotate-180 duration-200" />
+      </button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="start" className="w-48 mt-2">
+      <DropdownMenuItem asChild>
+        <Link href="/families" className="flex items-center cursor-pointer">
+          <List size={16} className="mr-2" />
+          Lista de Famílias
+        </Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
+        <Link href="/families/new" className="flex items-center cursor-pointer">
+          <Plus size={16} className="mr-2" />
+          Nova Família
+        </Link>
+      </DropdownMenuItem>
+    </DropdownMenuContent>
+  </DropdownMenu>
+)
 
 const NavItem = ({ href, icon, children }) => (
   <Link
