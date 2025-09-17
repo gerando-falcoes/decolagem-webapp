@@ -72,11 +72,20 @@ export function VincularFamiliaModal({ isOpen, onClose, onSuccess }: VincularFam
     if (searchTerm.trim() === "") {
       setFilteredFamilies(families)
     } else {
-      const filtered = families.filter(family =>
-        family.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        family.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        family.city?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      const filtered = families.filter(family => {
+        const searchTermLower = searchTerm.toLowerCase()
+        
+        // Verificar nome (pode ser null/undefined)
+        const nameMatch = family.name ? family.name.toLowerCase().includes(searchTermLower) : false
+        
+        // Verificar email (pode ser null)
+        const emailMatch = family.email ? family.email.toLowerCase().includes(searchTermLower) : false
+        
+        // Verificar cidade (pode ser null)
+        const cityMatch = family.city ? family.city.toLowerCase().includes(searchTermLower) : false
+        
+        return nameMatch || emailMatch || cityMatch
+      })
       setFilteredFamilies(filtered)
     }
   }, [searchTerm, families])
@@ -345,7 +354,7 @@ export function VincularFamiliaModal({ isOpen, onClose, onSuccess }: VincularFam
               <Button 
                 onClick={handleVincularFamilia}
                 disabled={isLinking}
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="bg-green-600 hover:bg-green-500 text-white hover:text-white shadow-sm hover:shadow-md transition-all duration-200"
               >
                 {isLinking ? (
                   <>

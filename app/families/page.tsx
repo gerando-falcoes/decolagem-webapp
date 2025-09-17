@@ -89,7 +89,7 @@ export default function FamiliesPage() {
             <Button 
               variant="outline" 
               onClick={() => setIsVincularModalOpen(true)}
-              className="border-green-600 text-green-600 hover:bg-green-50 font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300"
+              className="border-green-600 text-green-600 hover:bg-green-600 hover:text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
             >
               <LinkIcon className="mr-2" /> Vincular Família
             </Button>
