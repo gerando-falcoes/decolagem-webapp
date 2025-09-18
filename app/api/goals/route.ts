@@ -70,9 +70,8 @@ export async function POST(request: NextRequest) {
         goal_title,
         goal_category: goal_category || 'Meta personalizada criada pelo mentor',
         target_date,
-        current_status: source === 'manual' ? 'SUGERIDA' : 'ATIVA',
+        current_status: 'PENDENTE',
         progress_percentage: 0,
-        source,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
