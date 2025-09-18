@@ -20,10 +20,14 @@ import {
   Calendar,
   Users,
   User,
+  Zap,
+  AlertTriangle,
+  Eye,
 } from "lucide-react"
 import { MetaModal } from "@/components/families/meta-modal"
 import { useFamilyById, FamilyOverview } from "@/hooks/useFamilyOverview"
 import { useFamilyGoals, getStatusColor, getStatusIcon, getTransitionButtonText, getNextStatus, getGoalDimension, formatDate } from "@/hooks/useFamilyGoals"
+import { useDignometerTriggers } from "@/hooks/useDignometerTriggers"
 import { useAuth } from "@/lib/auth"
 import { isMentorEmail } from "@/lib/mentor-utils"
 
@@ -343,6 +347,7 @@ const GoalsSummary = ({
   onAddMeta: () => void 
 }) => {
   const { data: goalsData, loading, error, updateGoalStatus } = useFamilyGoals(family.family_id)
+  const { data: triggersData } = useDignometerTriggers(family.family_id)
   const [updatingGoalId, setUpdatingGoalId] = useState<string | null>(null)
 
   const handleStatusTransition = async (goalId: string, currentStatus: string) => {
@@ -371,6 +376,45 @@ const GoalsSummary = ({
           </Button>
         )}
       </CardTitle>
+
+      {/* Alert para recomendações automáticas */}
+      {triggersData && triggersData.total_recommendations > 0 && isMentorOfFamily && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4 p-3 bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Zap className="w-5 h-5 text-orange-600" />
+              <div>
+                <h4 className="text-sm font-semibold text-orange-900">
+                  {triggersData.total_recommendations} Recomendação{triggersData.total_recommendations !== 1 ? 'ões' : ''} Baseada{triggersData.total_recommendations !== 1 ? 's' : ''} no Dignômetro
+                </h4>
+                <p className="text-xs text-orange-700">
+                  Recomendações geradas para as dimensões com vulnerabilidades
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Badge variant="destructive" className="text-xs">
+                {triggersData.vulnerable_dimensions?.filter(d => 
+                  ['agua', 'saneamento', 'educacao', 'saude'].includes(d)
+                ).length || 0} críticas
+              </Badge>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={onAddMeta}
+                className="text-orange-700 border-orange-300 hover:bg-orange-100"
+              >
+                <Eye className="w-4 h-4 mr-1" />
+                Ver Agora
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      )}
       
       {loading ? (
         <div className="flex items-center justify-center py-8">
