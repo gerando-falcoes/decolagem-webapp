@@ -26,6 +26,8 @@ import {
   Lightbulb,
   Loader2,
   AlertCircle,
+  Trash2,
+  UserPlus,
 } from "lucide-react"
 
 // Reusable Form Section Component from the plan
@@ -92,6 +94,53 @@ const FormSidebar = ({ formData }) => (
   </div>
 )
 
+// Componente para card dos membros da família
+const FamilyMemberCard = ({ member, index, onUpdate, onRemove, canRemove }) => (
+  <Card className="border-2 border-dashed border-gray-300 hover:border-blue-300 transition-colors">
+    <CardHeader className="pb-3">
+      <div className="flex items-center justify-between">
+        <CardTitle className="text-sm font-medium text-gray-700 flex items-center">
+          <Users className="w-4 h-4 mr-2 text-blue-500" />
+          Membro {index + 1}
+        </CardTitle>
+        {canRemove && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onRemove}
+            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        )}
+      </div>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <div>
+        <Label htmlFor={`member-name-${index}`}>Nome completo</Label>
+        <Input
+          id={`member-name-${index}`}
+          placeholder="Ex. João Silva Santos"
+          value={member.name}
+          onChange={(e) => onUpdate(index, 'name', e.target.value)}
+          className="mt-1"
+        />
+      </div>
+      <div>
+        <Label htmlFor={`member-cpf-${index}`}>CPF</Label>
+        <Input
+          id={`member-cpf-${index}`}
+          placeholder="000.000.000-00"
+          value={member.cpf}
+          onChange={(e) => onUpdate(index, 'cpf', e.target.value)}
+          className="mt-1"
+        />
+      </div>
+    </CardContent>
+  </Card>
+)
+
 // Progress Indicator from the plan
 const ProgressIndicator = ({ completedFields, totalFields }) => {
     const progressPercentage = totalFields > 0 ? (completedFields / totalFields) * 100 : 0;
@@ -143,13 +192,23 @@ export default function NewFamilyPage() {
     consent: false,
   });
 
-  const totalFields = 15; // Total number of fields in the form
+  // Estado para membros da família
+  const [familyMembers, setFamilyMembers] = useState([
+    { name: "", cpf: "" } // Pelo menos um membro inicial
+  ]);
+
+  const totalFields = 16; // Atualizado para incluir membros da família
   const completedFields = useMemo(() => {
-      return Object.values(formData).filter(value => {
+      const formFieldsCount = Object.values(formData).filter(value => {
           if (typeof value === 'boolean') return value === true;
           return value !== '' && value !== null;
       }).length;
-  }, [formData]);
+      
+      // Contar membros com pelo menos nome preenchido
+      const membersCount = familyMembers.filter(member => member.name.trim() !== '').length;
+      
+      return formFieldsCount + (membersCount > 0 ? 1 : 0);
+  }, [formData, familyMembers]);
 
   const handleInputChange = (e) => {
     const { id, value, type, checked } = e.target
@@ -162,6 +221,24 @@ export default function NewFamilyPage() {
   const handleSelectChange = (id, value) => {
     setFormData((prev) => ({ ...prev, [id]: value }))
     // Limpar mensagens de erro/sucesso quando o usuário começar a editar
+    if (error) setError("")
+    if (success) setSuccess("")
+  }
+
+  // Funções para gerenciar membros da família
+  const addFamilyMember = () => {
+    setFamilyMembers(prev => [...prev, { name: "", cpf: "" }])
+  }
+
+  const removeFamilyMember = (index) => {
+    setFamilyMembers(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const updateFamilyMember = (index, field, value) => {
+    setFamilyMembers(prev => prev.map((member, i) => 
+      i === index ? { ...member, [field]: value } : member
+    ))
+    // Limpar mensagens de erro/sucesso
     if (error) setError("")
     if (success) setSuccess("")
   }
@@ -187,6 +264,14 @@ export default function NewFamilyPage() {
       setError("As senhas não coincidem")
       return false
     }
+    
+    // Validação dos membros da família
+    const validMembers = familyMembers.filter(member => member.name.trim() !== '')
+    if (validMembers.length === 0) {
+      setError("É necessário cadastrar pelo menos um membro da família")
+      return false
+    }
+    
     if (!formData.consent) {
       setError("É necessário aceitar os termos de uso e política de privacidade")
       return false
@@ -304,51 +389,66 @@ export default function NewFamilyPage() {
                       <SelectContent>
                         <SelectItem value="0-500">R$ 0 - R$ 500</SelectItem>
                         <SelectItem value="500-1000">R$ 500 - R$ 1.000</SelectItem>
-                        <SelectItem value="1000-2000">R$ 1.000 - R$ 2.000</SelectItem>
+                        <SelectItem value="1000-1500">R$ 1.000 - R$ 1.500</SelectItem>
+                        <SelectItem value="1500-2000">R$ 1.500 - R$ 2.000</SelectItem>
+                        <SelectItem value="2000-3000">R$ 2.000 - R$ 3.000</SelectItem>
+                        <SelectItem value="3000-5000">R$ 3.000 - R$ 5.000</SelectItem>
+                        <SelectItem value="5000+">Acima de R$ 5.000</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="familySize">Tamanho da família</Label>
-                    <Input id="familySize" placeholder="Ex. 4" className="mt-1" onChange={handleInputChange} />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="mentor">Mentor responsável</Label>
-                  <div className="flex space-x-2 mt-1">
-                    <Select onValueChange={(value) => handleSelectChange("mentor", value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Carlos Mendes">Carlos Mendes</SelectItem>
-                        <SelectItem value="Ana Souza">Ana Souza</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button type="button" variant="outline" size="icon">
-                      <Plus className="w-4 h-4" />
-                    </Button>
+                    <Label htmlFor="mentor">Mentor responsável</Label>
+                    <div className="flex space-x-2 mt-1">
+                      <Select onValueChange={(value) => handleSelectChange("mentor", value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Carlos Mendes">Carlos Mendes</SelectItem>
+                          <SelectItem value="Ana Souza">Ana Souza</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button type="button" variant="outline" size="icon">
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </FormSection>
 
-              <FormSection title="Acesso do Responsável" icon={<Lock />}>
-                <p className="text-sm text-gray-600 -mt-2">
-                  Crie uma senha para que o responsável acesse o portal.
-                </p>
+              {/* Nova seção: Membros da Família */}
+              <FormSection title="Membros da Família" icon={<UserPlus />} isRequired>
                 <div>
-                  <Label htmlFor="autoEmail">E-mail (auto-preenchido)</Label>
-                  <Input id="autoEmail" value={formData.email || ""} disabled className="mt-1 bg-gray-100" />
+                  <Label htmlFor="familySize">Tamanho da família</Label>
+                  <Input id="familySize" placeholder="Ex. 4" className="mt-1" onChange={handleInputChange} />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="password">Criar senha</Label>
-                    <Input id="password" type="password" placeholder="Mínimo 8 caracteres" className="mt-1" onChange={handleInputChange} />
-                  </div>
-                  <div>
-                    <Label htmlFor="confirmPassword">Confirmar senha</Label>
-                    <Input id="confirmPassword" type="password" placeholder="Repita a senha" className="mt-1" onChange={handleInputChange} />
-                  </div>
+                
+                <p className="text-sm text-gray-600">
+                  Adicione pelo menos um membro da família com nome e CPF.
+                </p>
+                
+                <div className="space-y-4">
+                  {familyMembers.map((member, index) => (
+                    <FamilyMemberCard
+                      key={index}
+                      member={member}
+                      index={index}
+                      onUpdate={updateFamilyMember}
+                      onRemove={() => removeFamilyMember(index)}
+                      canRemove={familyMembers.length > 1}
+                    />
+                  ))}
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addFamilyMember}
+                    className="w-full border-dashed border-2 border-gray-300 hover:border-blue-300 hover:bg-blue-50 text-gray-600"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Adicionar novo membro
+                  </Button>
                 </div>
               </FormSection>
             </div>
@@ -386,6 +486,26 @@ export default function NewFamilyPage() {
                   <div>
                     <Label htmlFor="reference">Ponto de referência</Label>
                     <Input id="reference" placeholder="Ex. Próximo ao mercado" className="mt-1" onChange={handleInputChange} />
+                  </div>
+                </div>
+              </FormSection>
+
+              <FormSection title="Acesso do Responsável" icon={<Lock />}>
+                <p className="text-sm text-gray-600 -mt-2">
+                  Crie uma senha para que o responsável acesse o portal.
+                </p>
+                <div>
+                  <Label htmlFor="autoEmail">E-mail (auto-preenchido)</Label>
+                  <Input id="autoEmail" value={formData.email || ""} disabled className="mt-1 bg-gray-100" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="password">Criar senha</Label>
+                    <Input id="password" type="password" placeholder="Mínimo 8 caracteres" className="mt-1" onChange={handleInputChange} />
+                  </div>
+                  <div>
+                    <Label htmlFor="confirmPassword">Confirmar senha</Label>
+                    <Input id="confirmPassword" type="password" placeholder="Repita a senha" className="mt-1" onChange={handleInputChange} />
                   </div>
                 </div>
               </FormSection>
