@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { VincularFamiliaModal } from "@/components/families/vincular-familia-modal";
 import { AprovarFamiliasModal } from "@/components/families/aprovar-familias-modal";
+import { DeletarFamiliaModal } from "@/components/families/deletar-familia-modal";
 import Link from "next/link";
-import { Plus, Search, ChevronRight, Link as LinkIcon, CheckCircle } from "lucide-react";
+import { Plus, Search, ChevronRight, Link as LinkIcon, CheckCircle, ChevronDown, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabaseBrowserClient } from "@/lib/supabase/browser";
 
@@ -57,29 +58,76 @@ const getStatusBadge = (status) => {
 
 export default function FamiliesPage() {
   const [families, setFamilies] = useState([]);
+  const [filteredFamilies, setFilteredFamilies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
   const [isVincularModalOpen, setIsVincularModalOpen] = useState(false);
   const [isAprovarModalOpen, setIsAprovarModalOpen] = useState(false);
+  const [isDeletarModalOpen, setIsDeletarModalOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
     const loadFamilies = async () => {
       setLoading(true);
       const data = await getFamiliesData();
       setFamilies(data);
+      setFilteredFamilies(data);
       setLoading(false);
     };
 
     loadFamilies();
   }, []);
 
+  // Filtrar famílias baseado na busca
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setFilteredFamilies(families);
+    } else {
+      const filtered = families.filter(family =>
+        family.FAMILIA?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        family.MENTOR?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        family.STATUS?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredFamilies(filtered);
+    }
+  }, [searchTerm, families]);
+
+  // Fechar dropdown quando clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isDropdownOpen && !event.target.closest('.dropdown-container')) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
   const handleVincularSuccess = () => {
     // Recarregar a lista após vincular
-    getFamiliesData().then(setFamilies);
+    getFamiliesData().then(data => {
+      setFamilies(data);
+      setFilteredFamilies(data);
+    });
   };
 
   const handleAprovarSuccess = () => {
     // Recarregar a lista após aprovação
-    getFamiliesData().then(setFamilies);
+    getFamiliesData().then(data => {
+      setFamilies(data);
+      setFilteredFamilies(data);
+    });
+  };
+
+  const handleDeletarSuccess = () => {
+    // Recarregar a lista após exclusão
+    getFamiliesData().then(data => {
+      setFamilies(data);
+      setFilteredFamilies(data);
+    });
   };
 
   return (
@@ -93,25 +141,64 @@ export default function FamiliesPage() {
             <p className="text-gray-600 mt-1">Acompanhe o desenvolvimento e as metas de cada família.</p>
           </div>
           <div className="flex space-x-3">
-            <Button 
-              variant="outline" 
-              onClick={() => setIsVincularModalOpen(true)}
-              className="border-green-600 text-green-600 hover:bg-green-600 hover:text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              <LinkIcon className="mr-2" /> Vincular Família
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => setIsAprovarModalOpen(true)}
-              className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
-            >
-              <CheckCircle className="mr-2" /> Aprovar Famílias
-            </Button>
-            <Link href="/families/new">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
-                <Plus className="mr-2" /> Nova Família
+            <div className="relative dropdown-container">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-bold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                Ações
+                <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
               </Button>
-            </Link>
+              
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setIsVincularModalOpen(true);
+                        setIsDropdownOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-green-50 focus:bg-green-50 flex items-center"
+                    >
+                      <LinkIcon className="mr-2 h-4 w-4 text-green-600" />
+                      <span className="text-green-700 font-medium">Vincular Família</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        setIsAprovarModalOpen(true);
+                        setIsDropdownOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-blue-50 focus:bg-blue-50 flex items-center"
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4 text-blue-600" />
+                      <span className="text-blue-700 font-medium">Aprovar Famílias</span>
+                    </button>
+                    
+                    <Link 
+                      href="/families/new"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-blue-50 focus:bg-blue-50 flex items-center"
+                    >
+                      <Plus className="mr-2 h-4 w-4 text-blue-600" />
+                      <span className="text-blue-700 font-medium">Nova Família</span>
+                    </Link>
+                    
+                    <button
+                      onClick={() => {
+                        setIsDeletarModalOpen(true);
+                        setIsDropdownOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-red-50 focus:bg-red-50 flex items-center"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4 text-red-600" />
+                      <span className="text-red-700 font-medium">Deletar Família</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -119,7 +206,13 @@ export default function FamiliesPage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-gray-700">Todas as Famílias</h2>
             <div className="relative w-64">
-              <Input type="search" placeholder="Buscar família..." className="pl-10" />
+              <Input 
+                type="search" 
+                placeholder="Buscar família..." 
+                className="pl-10" 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
             </div>
           </div>
@@ -128,6 +221,28 @@ export default function FamiliesPage() {
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
               <span className="ml-3 text-gray-600">Carregando famílias...</span>
+            </div>
+          ) : filteredFamilies.length === 0 ? (
+            <div className="text-center py-12">
+              <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {searchTerm ? 'Nenhuma família encontrada' : 'Nenhuma família cadastrada'}
+              </h3>
+              <p className="text-gray-600">
+                {searchTerm 
+                  ? `Não encontramos famílias que correspondam a "${searchTerm}"`
+                  : 'Comece cadastrando uma nova família'
+                }
+              </p>
+              {searchTerm && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => setSearchTerm("")}
+                  className="mt-4"
+                >
+                  Limpar busca
+                </Button>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -142,7 +257,7 @@ export default function FamiliesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {families.map((family, index) => (
+                  {filteredFamilies.map((family, index) => (
                     <tr
                       key={index} // Using index as key since view might not have a unique ID per row
                       className="border-b border-gray-100 hover:bg-gray-50"
@@ -180,6 +295,13 @@ export default function FamiliesPage() {
         isOpen={isAprovarModalOpen}
         onClose={() => setIsAprovarModalOpen(false)}
         onSuccess={handleAprovarSuccess}
+      />
+
+      {/* Modal de Deletar Família */}
+      <DeletarFamiliaModal
+        isOpen={isDeletarModalOpen}
+        onClose={() => setIsDeletarModalOpen(false)}
+        onSuccess={handleDeletarSuccess}
       />
     </div>
   );
