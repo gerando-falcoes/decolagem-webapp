@@ -26,7 +26,8 @@ import {
 } from "lucide-react"
 import { MetaModal } from "@/components/families/meta-modal"
 import { useFamilyById, FamilyOverview } from "@/hooks/useFamilyOverview"
-import { useFamilyGoals, getStatusColor, getStatusIcon, getTransitionButtonText, getNextStatus, getGoalDimension, formatDate } from "@/hooks/useFamilyGoals"
+import { useFamilyGoals, getStatusColor, getStatusIcon, getProgressColor, getProgressIcon, getGoalDimension, formatDate } from "@/hooks/useFamilyGoals"
+import { GoalActionButtonsSimple } from "@/components/families/GoalActionButtonsSimple"
 import { useDignometerTriggers } from "@/hooks/useDignometerTriggers"
 import { useAuth } from "@/lib/auth"
 import { isMentorEmail } from "@/lib/mentor-utils"
@@ -346,21 +347,9 @@ const GoalsSummary = ({
   isMentorOfFamily: boolean
   onAddMeta: () => void 
 }) => {
-  const { data: goalsData, loading, error, updateGoalStatus } = useFamilyGoals(family.family_id)
+  const { data: goalsData, loading, error, toggleGoalStatus, markGoalCompleted, cancelGoal, deleteGoal } = useFamilyGoals(family.family_id)
   const { data: triggersData } = useDignometerTriggers(family.family_id)
-  const [updatingGoalId, setUpdatingGoalId] = useState<string | null>(null)
-
-  const handleStatusTransition = async (goalId: string, currentStatus: string) => {
-    setUpdatingGoalId(goalId)
-    try {
-      const newStatus = getNextStatus(currentStatus)
-      await updateGoalStatus(goalId, newStatus)
-    } catch (error) {
-      console.error('Erro ao atualizar status:', error)
-    } finally {
-      setUpdatingGoalId(null)
-    }
-  }
+  // Funções já estão disponíveis do hook: toggleGoalStatus, markGoalCompleted, deleteGoal
 
   return (
     <Card className="p-6 rounded-2xl shadow-md">
@@ -389,10 +378,8 @@ const GoalsSummary = ({
               </div>
             </div>
             <div className="flex items-center space-x-2">
-              <Badge variant="destructive" className="text-xs">
-                {triggersData.vulnerable_dimensions?.filter(d => 
-                  ['agua', 'saneamento', 'educacao', 'saude'].includes(d)
-                ).length || 0} críticas
+              <Badge variant="outline" className="text-xs">
+                {triggersData.vulnerable_dimensions?.length || 0} vulnerabilidades
               </Badge>
               <Button 
                 size="sm" 
@@ -421,7 +408,7 @@ const GoalsSummary = ({
       ) : goalsData && goalsData.totalGoals > 0 ? (
         <div className="space-y-6">
           {/* Estatísticas resumidas */}
-          <div className="grid grid-cols-2 gap-4 text-center">
+          <div className="grid grid-cols-3 gap-4 text-center">
             <div className="p-3 bg-blue-50 rounded-lg">
               <div className="text-xl font-bold text-blue-600">{goalsData.activeGoals}</div>
               <div className="text-xs text-gray-600">🎯 Ativas</div>
@@ -432,33 +419,13 @@ const GoalsSummary = ({
               <div className="text-xs text-gray-600">✅ Concluídas</div>
               <div className="text-xs text-gray-500 mt-1">Finalizadas</div>
             </div>
+            <div className="p-3 bg-orange-50 rounded-lg">
+              <div className="text-xl font-bold text-orange-600">{goalsData.canceledGoals || 0}</div>
+              <div className="text-xs text-gray-600">❌ Canceladas</div>
+              <div className="text-xs text-gray-500 mt-1">Interrompidas</div>
+            </div>
           </div>
           
-          {/* Progresso médio */}
-          <div className="mt-4">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-700">Progresso Médio</span>
-              <span className="text-sm font-bold text-gray-800">
-                {goalsData.allGoals?.length > 0 
-                  ? Math.round(goalsData.allGoals.reduce((sum, goal) => sum + goal.progress_percentage, 0) / goalsData.allGoals.length)
-                  : 0
-                }%
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <motion.div
-                className="bg-green-500 h-2.5 rounded-full"
-                initial={{ width: 0 }}
-                animate={{ 
-                  width: `${goalsData.allGoals?.length > 0 
-                    ? Math.round(goalsData.allGoals.reduce((sum, goal) => sum + goal.progress_percentage, 0) / goalsData.allGoals.length)
-                    : 0
-                  }%` 
-                }}
-                transition={{ duration: 1.5, ease: "easeOut" }}
-              />
-            </div>
-          </div>
 
           {/* VISUALIZAÇÃO DETALHADA DAS METAS - Conforme solicitado */}
           <div className="mt-6">
@@ -480,16 +447,21 @@ const GoalsSummary = ({
                     <div className="flex-1">
                       {/* Título e Status */}
                       <div className="flex items-center mb-2">
-                        <h5 className="font-medium text-gray-900 mr-3">{goal.goal_title}</h5>
+                        <h5 className="font-medium text-gray-900 mr-3">{goal.goal_name}</h5>
                         <Badge className={`${getStatusColor(goal.current_status)} border text-xs`}>
                           {getStatusIcon(goal.current_status)} {goal.current_status}
                         </Badge>
+                        {goal.progress_percentage === 100 && (
+                          <Badge className={`${getProgressColor(goal.progress_percentage)} border text-xs ml-2`}>
+                            {getProgressIcon(goal.progress_percentage)} Concluída
+                          </Badge>
+                        )}
                       </div>
                       
-                      {/* Descrição/Categoria */}
-                      {goal.goal_category && (
+                      {/* Descrição */}
+                      {goal.goal_description && (
                         <p className="text-sm text-gray-600 mb-2">
-                          📝 <strong>Descrição:</strong> {goal.goal_category}
+                          📝 <strong>Descrição:</strong> {goal.goal_description}
                         </p>
                       )}
                       
@@ -525,22 +497,13 @@ const GoalsSummary = ({
                     {/* Botão de ação - apenas para mentores */}
                     {isMentorOfFamily && (
                       <div className="ml-4">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleStatusTransition(goal.id, goal.current_status)}
-                          disabled={updatingGoalId === goal.id}
-                          className="text-xs"
-                        >
-                          {updatingGoalId === goal.id ? (
-                            <div className="flex items-center">
-                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-1"></div>
-                              Atualizando...
-                            </div>
-                          ) : (
-                            getTransitionButtonText(goal.current_status)
-                          )}
-                        </Button>
+                        <GoalActionButtonsSimple
+                          goal={goal}
+                          onToggleStatus={toggleGoalStatus}
+                          onMarkCompleted={markGoalCompleted}
+                          onCancel={cancelGoal}
+                          onDelete={deleteGoal}
+                        />
                       </div>
                     )}
                   </div>
