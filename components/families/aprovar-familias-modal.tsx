@@ -33,9 +33,9 @@ export function AprovarFamiliasModal({ isOpen, onClose, onSuccess }: AprovarFami
   const [checkingMentor, setCheckingMentor] = useState(true)
   const { user } = useAuth()
 
-  // Verificar se usuário é mentor quando modal abre
+  // Verificar se usuário tem perfil na tabela profiles
   useEffect(() => {
-    async function checkIfUserIsMentor() {
+    async function checkUserProfile() {
       if (!isOpen || !user?.email) {
         setCheckingMentor(false)
         return
@@ -43,31 +43,32 @@ export function AprovarFamiliasModal({ isOpen, onClose, onSuccess }: AprovarFami
 
       try {
         setCheckingMentor(true)
-        console.log('🔍 Verificando se usuário é mentor para aprovação:', user.email)
+        console.log('🔍 Verificando perfil do usuário:', user.email)
         
-        // Verificar se o usuário logado é mentor na tabela profiles
         const response = await fetch('/api/auth/check-mentor', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: user.email })
         })
         
-        const { isMentor } = await response.json()
-        console.log('✅ Resultado da verificação de mentor:', isMentor)
-        setUserIsMentor(isMentor)
+        const data = await response.json()
+        console.log('✅ Resposta da verificação:', data)
         
-        if (isMentor) {
+        if (data.profile) {
+          setUserIsMentor(true)
           fetchPendingFamilies()
+        } else {
+          setUserIsMentor(false)
         }
       } catch (error) {
-        console.error('❌ Erro ao verificar se usuário é mentor:', error)
+        console.error('❌ Erro ao verificar perfil:', error)
         setUserIsMentor(false)
       } finally {
         setCheckingMentor(false)
       }
     }
 
-    checkIfUserIsMentor()
+    checkUserProfile()
   }, [isOpen, user?.email])
 
   const fetchPendingFamilies = async () => {
@@ -122,16 +123,18 @@ export function AprovarFamiliasModal({ isOpen, onClose, onSuccess }: AprovarFami
 
       console.log('✅ Aprovando famílias selecionadas:', Array.from(selectedFamilies))
 
-      // Buscar informações do mentor logado
-      const mentorResponse = await fetch('/api/auth/check-mentor', {
+      // Buscar o perfil do usuário na tabela profiles usando o email
+      const profileResponse = await fetch('/api/auth/check-mentor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: user.email })
       })
 
-      const mentorData = await mentorResponse.json()
-      if (!mentorData.isMentor) {
-        alert('Erro: Usuário não é mentor')
+      const profileData = await profileResponse.json()
+      
+      // Verificar se encontrou o perfil
+      if (!profileData.profile) {
+        alert('Erro: Perfil do usuário não encontrado na tabela profiles')
         return
       }
 
@@ -142,8 +145,8 @@ export function AprovarFamiliasModal({ isOpen, onClose, onSuccess }: AprovarFami
         },
         body: JSON.stringify({
           familyIds: Array.from(selectedFamilies),
-          mentorId: mentorData.mentor.id,
-          mentorName: mentorData.mentor.name
+          mentorId: profileData.profile.id, // Usar ID do perfil na tabela profiles
+          mentorName: profileData.profile.name || user.email || 'Mentor'
         })
       })
 

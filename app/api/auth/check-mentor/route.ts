@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       isMentor,
+      mentor: data, // Mantém compatibilidade com o modal
       profile: data,
       reason: isMentor ? 'Usuário é mentor' : `Role '${data.role}' não é mentor`
     })
