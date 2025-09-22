@@ -67,7 +67,7 @@ export async function POST(request: Request) {
 
     console.log(`✅ API: Família encontrada na tabela families: ${family.name}`)
 
-    // 3. Deletar em cascata - começar pelas tabelas dependentes
+    // 3. Deletar em cascata - ordem correta para evitar violações de constraint
     console.log('🗑️ API: Iniciando exclusão em cascata...')
 
     // 3.0. PRIMEIRO: Remover referência familie_id na tabela profiles (se existir)
@@ -84,19 +84,41 @@ export async function POST(request: Request) {
       console.log('✅ API: Referência familie_id removida da tabela profiles')
     }
 
-    // 3.1. Deletar family_members
-    const { error: membersError } = await supabase
-      .from('family_members')
+    // 3.1. Deletar family_goal_assignments (referencia family_id E assessment_id)
+    console.log('🗑️ API: Deletando family_goal_assignments...')
+    const { error: goalAssignmentsError } = await supabase
+      .from('family_goal_assignments')
       .delete()
       .eq('family_id', family.id)
 
-    if (membersError) {
-      console.error('❌ API: Erro ao deletar membros da família:', membersError.message)
+    if (goalAssignmentsError) {
+      console.error('❌ API: Erro ao deletar goal assignments:', goalAssignmentsError.message)
     } else {
-      console.log('✅ API: Membros da família deletados')
+      console.log('✅ API: Goal assignments deletados')
     }
 
-    // 3.2. Deletar assessments (dignometro_assessments)
+    // 3.2. Deletar family_goals (que referenciam assessment_id)
+    console.log('🗑️ API: Deletando family_goals...')
+    const { data: assessmentIds } = await supabase
+      .from('dignometro_assessments')
+      .select('id')
+      .eq('family_id', family.id)
+    
+    if (assessmentIds && assessmentIds.length > 0) {
+      const idsToDelete = assessmentIds.map(a => a.id)
+      const { error: familyGoalsError } = await supabase
+        .from('family_goals')
+        .delete()
+        .in('assessment_id', idsToDelete)
+
+      if (familyGoalsError) {
+        console.error('❌ API: Erro ao deletar family_goals:', familyGoalsError.message)
+      } else {
+        console.log('✅ API: Family goals deletados')
+      }
+    }
+
+    // 3.3. Deletar assessments (dignometro_assessments)
     const { error: assessmentsError } = await supabase
       .from('dignometro_assessments')
       .delete()
@@ -108,7 +130,19 @@ export async function POST(request: Request) {
       console.log('✅ API: Avaliações deletadas')
     }
 
-    // 3.3. Deletar goals
+    // 3.4. Deletar family_members
+    const { error: membersError } = await supabase
+      .from('family_members')
+      .delete()
+      .eq('family_id', family.id)
+
+    if (membersError) {
+      console.error('❌ API: Erro ao deletar membros da família:', membersError.message)
+    } else {
+      console.log('✅ API: Membros da família deletados')
+    }
+
+    // 3.5. Deletar goals (tabela antiga - manter por compatibilidade)
     const { error: goalsError } = await supabase
       .from('goals')
       .delete()
