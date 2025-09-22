@@ -15,7 +15,6 @@ import { useDignometerTriggers } from '@/hooks/useDignometerTriggers'
 // Helper functions para as recomendações
 export const getPriorityColor = (priority: string) => {
   switch (priority) {
-    case 'critical': return 'bg-red-600 text-white'
     case 'high': return 'bg-orange-600 text-white'
     case 'medium': return 'bg-yellow-600 text-white'
     case 'low': return 'bg-blue-600 text-white'
@@ -25,7 +24,6 @@ export const getPriorityColor = (priority: string) => {
 
 export const getPriorityIcon = (priority: string) => {
   switch (priority) {
-    case 'critical': return '🔴'
     case 'high': return '🟠'
     case 'medium': return '🟡'
     case 'low': return '🔵'

@@ -11,59 +11,8 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { X, Target, CheckCircle, XCircle, RefreshCw, Zap, Users, Settings, FileText, Tag, Calendar } from 'lucide-react'
 import { useDignometerTriggers } from '@/hooks/useDignometerTriggers'
+import { useGoalRecommendations, getDimensionColor, getDimensionIcon, getPriorityColor, getPriorityText } from '@/hooks/useGoalRecommendations'
 
-// Helper functions para as recomendações
-export const getPriorityColor = (priority: string) => {
-  switch (priority) {
-    case 'critical': return 'bg-red-600 text-white'
-    case 'high': return 'bg-orange-600 text-white'
-    case 'medium': return 'bg-yellow-600 text-white'
-    case 'low': return 'bg-blue-600 text-white'
-    default: return 'bg-gray-600 text-white'
-  }
-}
-
-export const getPriorityIcon = (priority: string) => {
-  switch (priority) {
-    case 'critical': return '🔴'
-    case 'high': return '🟠'
-    case 'medium': return '🟡'
-    case 'low': return '🔵'
-    default: return '⚪'
-  }
-}
-
-export const getDimensionLabel = (dimension: string) => {
-  const labels: { [key: string]: string } = {
-    agua: 'Água',
-    saneamento: 'Saneamento',
-    saude: 'Saúde',
-    educacao: 'Educação',
-    moradia: 'Moradia',
-    alimentacao: 'Alimentação',
-    renda_diversificada: 'Renda Diversificada',
-    renda_estavel: 'Renda Estável',
-    poupanca: 'Poupança',
-    bens_conectividade: 'Bens e Conectividade'
-  }
-  return labels[dimension] || dimension
-}
-
-export const getDimensionIcon = (dimension: string) => {
-  const icons: { [key: string]: string } = {
-    agua: '💧',
-    saneamento: '🚿',
-    saude: '🏥',
-    educacao: '📚',
-    moradia: '🏠',
-    alimentacao: '🍽️',
-    renda_diversificada: '💼',
-    renda_estavel: '💰',
-    poupanca: '🏦',
-    bens_conectividade: '📱'
-  }
-  return icons[dimension] || '📋'
-}
 
 interface MetaModalProps {
   isOpen: boolean
@@ -77,13 +26,24 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
     goal_title: '',
     goal_category: '',
     target_date: '',
-    dimension: 'Personalizada'
+    dimension: 'Personalizada',
+    priority_level: 'medium'
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [processingRecommendation, setProcessingRecommendation] = useState<string | null>(null)
   const [recommendationSettings, setRecommendationSettings] = useState<{[key: string]: {target_date: string, priority: string}}>({})
 
-  // Hook para triggers automáticos do dignômetro
+  // Hook para recomendações baseadas no dignômetro
+  const {
+    data: recommendationsData,
+    loading: loadingRecommendations,
+    error: recommendationsError,
+    refreshRecommendations,
+    createGoalFromRecommendation,
+    hasVulnerabilities
+  } = useGoalRecommendations(familyId)
+
+  // Hook para triggers automáticos do dignômetro (mantido para compatibilidade)
   const {
     data: triggersData,
     loading: loadingTriggers,
@@ -93,7 +53,7 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
     rejectRecommendation: rejectTriggerRecommendation,
     getSelectedRecommendations,
     clearSelectedRecommendations,
-    createGoalFromRecommendation
+    createGoalFromRecommendation: createGoalFromTrigger
   } = useDignometerTriggers(familyId)
 
   const dimensions = [
@@ -139,6 +99,12 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
         return
       }
 
+      if (!formData.priority_level) {
+        alert('❌ Por favor, selecione a prioridade da meta.')
+        setIsSubmitting(false)
+        return
+      }
+
       console.log('🚀 Criando meta manual:', {
         titulo: formData.goal_title,
         descricao: formData.goal_category,
@@ -146,32 +112,32 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
         data_alvo: formData.target_date
       })
 
-      const response = await fetch('/api/goals', {
+      const response = await fetch(`/api/families/${familyId}/goal-assignments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          family_id: familyId,
-          goal_title: formData.goal_title.trim(),
-          goal_category: formData.goal_category.trim(),
+          goal_name: formData.goal_title.trim(),
+          goal_description: formData.goal_category.trim(),
           dimension: formData.dimension,
           target_date: formData.target_date,
-          current_status: 'PENDENTE',
+          priority_level: formData.priority_level,
           source: 'manual'
         })
       })
 
       if (response.ok) {
         const result = await response.json()
-        console.log('✅ Meta manual criada com sucesso:', result.goal)
+        console.log('✅ Meta manual criada com sucesso:', result.goal_assignment)
         
         // Reset form
         setFormData({
           goal_title: '',
           goal_category: '',
           target_date: '',
-          dimension: 'Personalizada'
+          dimension: 'Personalizada',
+          priority_level: 'medium'
         })
         
         console.log('✅ Meta manual criada! Atualizando página para mostrar no resumo...')
@@ -274,7 +240,7 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
 
     setProcessingRecommendation(recommendation.id)
     try {
-      console.log('🚀 Criando meta a partir da recomendação:', recommendation.id, recommendation.goal, settings)
+      console.log('🚀 Criando meta a partir da recomendação:', recommendation.id, recommendation.goal_name, settings)
       const success = await createGoalFromRecommendation(recommendation, settings)
       if (success) {
         console.log('✅ Meta criada com sucesso! Atualizando página para mostrar no resumo...')
@@ -331,7 +297,7 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
     }
   }
 
-  const hasAutoRecommendations = triggersData && triggersData.total_recommendations > 0
+  const hasAutoRecommendations = recommendationsData && recommendationsData.total_recommendations > 0
   const selectedCount = getSelectedRecommendations().length
 
     return (
@@ -361,9 +327,9 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
           >
             <Zap className="w-4 h-4" />
             <span>Recomendações Automáticas</span>
-            {hasAutoRecommendations && (
+            {recommendationsData && recommendationsData.total_recommendations > 0 && (
               <Badge variant="destructive" className="ml-1">
-                {triggersData.total_recommendations}
+                {recommendationsData.total_recommendations}
               </Badge>
             )}
           </button>
@@ -407,7 +373,7 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
                 <Zap size={48} className="mx-auto text-gray-400 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma recomendação automática</h3>
                 <p className="text-gray-500 mb-4">
-                  {!triggersData?.has_dignometer 
+                  {!recommendationsData?.has_assessment 
                     ? 'Esta família ainda não possui dignômetro preenchido.'
                     : 'Não há vulnerabilidades detectadas no dignômetro desta família.'
                   }
@@ -437,13 +403,13 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
                   <div className="grid grid-cols-4 gap-4 text-center">
                     <div className="bg-white p-3 rounded-md">
                       <div className="text-2xl font-bold text-blue-600">
-                        {triggersData.total_recommendations}
+                        {recommendationsData.total_recommendations}
                       </div>
                       <div className="text-xs text-gray-600">Total</div>
                     </div>
                     <div className="bg-white p-3 rounded-md">
                       <div className="text-2xl font-bold text-orange-600">
-                        {triggersData.vulnerable_dimensions?.length || 0}
+                        {recommendationsData.vulnerable_dimensions?.length || 0}
                       </div>
                       <div className="text-xs text-gray-600">Dimensões Vulneráveis</div>
                     </div>
@@ -455,22 +421,22 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
                     </div>
                     <div className="bg-white p-3 rounded-md">
                       <div className="text-2xl font-bold text-purple-600">
-                        {triggersData.vulnerable_dimensions?.filter(d => 
-                          ['agua', 'saneamento', 'educacao', 'saude'].includes(d)
+                        {recommendationsData.recommendations?.filter(r => 
+                          r.priority_level === 'high'
                         ).length || 0}
                       </div>
-                      <div className="text-xs text-gray-600">Críticas</div>
+                      <div className="text-xs text-gray-600">Alta Prioridade</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Recomendações por dimensão */}
-                {Object.entries(triggersData.recommendations_by_dimension).map(([dimension, recommendations]) => (
+                {Object.entries(recommendationsData.recommendations_by_dimension).map(([dimension, recommendations]) => (
                   <Card key={dimension} className="border-l-4 border-l-orange-500">
                     <CardHeader className="pb-3">
                       <CardTitle className="flex items-center text-md">
                         <span className="mr-2">{getDimensionIcon(dimension)}</span>
-                        {getDimensionLabel(dimension)}
+                        {dimension}
                         <Badge variant="outline" className="ml-2">
                           {recommendations.length} recomendação{recommendations.length !== 1 ? 'ões' : ''}
                         </Badge>
@@ -490,8 +456,11 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
                             <div className="flex justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center mb-2">
-                                  <h4 className="font-medium text-gray-900 mr-2">{rec.goal}</h4>
+                                  <h4 className="font-medium text-gray-900 mr-2">{rec.goal_name}</h4>
                                 </div>
+                                {rec.goal_description && (
+                                  <p className="text-sm text-gray-600 mb-3">{rec.goal_description}</p>
+                                )}
                                 
                                 {/* Campos de configuração para recomendações */}
                                 <div className="bg-white p-2 rounded-md border space-y-2">
@@ -756,6 +725,41 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
                 />
                 <p className="text-xs text-gray-500">
                   Defina um prazo realista para conclusão desta meta
+                </p>
+              </div>
+
+              {/* Prioridade */}
+              <div className="space-y-2">
+                <Label htmlFor="priority_level" className="text-sm font-medium text-gray-700 flex items-center">
+                  🎯 Prioridade *
+                </Label>
+                <Select 
+                  value={formData.priority_level} 
+                  onValueChange={(value) => setFormData({ ...formData, priority_level: value })}
+                >
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Selecione a prioridade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low" className="py-3">
+                      <div className="flex items-center space-x-2">
+                        <span>🔵 Baixa</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="medium" className="py-3">
+                      <div className="flex items-center space-x-2">
+                        <span>🟡 Média</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="high" className="py-3">
+                      <div className="flex items-center space-x-2">
+                        <span>🟠 Alta</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500">
+                  Defina a importância desta meta para a família
                 </p>
               </div>
 

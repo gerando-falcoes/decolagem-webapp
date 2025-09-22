@@ -267,7 +267,7 @@ export function useDignometerTriggers(familyId: string | null): UseDignometerTri
         },
         body: JSON.stringify({
           family_id: familyId,
-          goal_title: recommendation.goal,
+          goal_title: recommendation.goal_name,
           goal_category: `Meta gerada automaticamente - ${recommendation.dimension}`,
           target_date: settings?.target_date,
           current_status: 'PENDENTE',
@@ -296,7 +296,7 @@ export function useDignometerTriggers(familyId: string | null): UseDignometerTri
         const updatedRecommendations = data?.auto_recommendations.filter(rec => {
           const shouldKeep = rec.id !== recommendation.id
           if (!shouldKeep) {
-            console.log('🗑️ Removendo recomendação da lista:', rec.id, rec.goal)
+            console.log('🗑️ Removendo recomendação da lista:', rec.id, rec.goal_name)
           }
           return shouldKeep
         }) || []
@@ -321,7 +321,7 @@ export function useDignometerTriggers(familyId: string | null): UseDignometerTri
           setData(updatedData)
           setCachedData(updatedData)
           
-          console.log(`📊 Recomendações restantes: ${updatedRecommendations.length} (removida: ${recommendation.goal})`)
+          console.log(`📊 Recomendações restantes: ${updatedRecommendations.length} (removida: ${recommendation.goal_name})`)
         } else {
           console.log('❌ ERRO: data é null, não foi possível atualizar estado!')
         }

@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
           autoRecommendations.push({
             id: `auto_${family_id}_${dimension}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             dimension: dimension,
-            goal: goalTemplate.goal,
+            goal: goalTemplate.goal_name,
             question: goalTemplate.question,
             priority_level: goalTemplate.priority_level,
             generated_at: new Date().toISOString(),
@@ -314,7 +314,7 @@ export async function GET(request: NextRequest) {
         autoRecommendations.push({
           id: `auto_${family_id}_${dimension}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           dimension: dimension,
-          goal: goalTemplate.goal,
+          goal: goalTemplate.goal_name,
           question: goalTemplate.question,
           priority_level: goalTemplate.priority_level,
           generated_at: new Date().toISOString(),

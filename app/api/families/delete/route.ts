@@ -70,6 +70,20 @@ export async function POST(request: Request) {
     // 3. Deletar em cascata - começar pelas tabelas dependentes
     console.log('🗑️ API: Iniciando exclusão em cascata...')
 
+    // 3.0. PRIMEIRO: Remover referência familie_id na tabela profiles (se existir)
+    console.log('🔗 API: Removendo referência familie_id na tabela profiles...')
+    const { error: removeRefError } = await supabase
+      .from('profiles')
+      .update({ familie_id: null })
+      .eq('familie_id', family.id)
+
+    if (removeRefError) {
+      console.error('❌ API: Erro ao remover referência familie_id:', removeRefError.message)
+      // Continuar mesmo com erro, pois pode não existir a coluna
+    } else {
+      console.log('✅ API: Referência familie_id removida da tabela profiles')
+    }
+
     // 3.1. Deletar family_members
     const { error: membersError } = await supabase
       .from('family_members')
