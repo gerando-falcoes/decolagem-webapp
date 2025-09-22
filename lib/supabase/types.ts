@@ -18,6 +18,12 @@ export interface Database {
           created_at: string
           updated_at: string
           email: Json | null
+          status_aprovacao: string | null
+          aprovado_por: string | null
+          data_aprovacao: string | null
+          cpf_responsavel: string | null
+          cpf: string | null
+          senha: string | null
         }
         Insert: {
           id: string
@@ -27,6 +33,12 @@ export interface Database {
           created_at?: string
           updated_at?: string
           email?: Json | null
+          status_aprovacao?: string | null
+          aprovado_por?: string | null
+          data_aprovacao?: string | null
+          cpf_responsavel?: string | null
+          cpf?: string | null
+          senha?: string | null
         }
         Update: {
           id?: string
@@ -36,6 +48,12 @@ export interface Database {
           created_at?: string
           updated_at?: string
           email?: Json | null
+          status_aprovacao?: string | null
+          aprovado_por?: string | null
+          data_aprovacao?: string | null
+          cpf_responsavel?: string | null
+          cpf?: string | null
+          senha?: string | null
         }
       }
       families: {

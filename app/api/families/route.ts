@@ -50,52 +50,71 @@ export async function POST(request: Request) {
     const {
       name,
       phone,
-      whatsapp,
       email,
+      cpf,
       password,
       income,
       familySize,
-      mentor,
+      cep,
       state,
       city,
       street,
       neighborhood,
-      reference
+      reference,
+      mentorEmail,
+      familyMembers
     } = body
 
     // Validações básicas
-    if (!name || !email || !password) {
+    if (!name || !phone || !cpf || !password) {
       return NextResponse.json(
-        { error: 'Nome, email e senha são obrigatórios' },
+        { error: 'Nome, telefone, CPF e senha são obrigatórios' },
+        { status: 400 }
+      )
+    }
+    
+    // Validação do CPF
+    const cpfNumbers = cpf.replace(/\D/g, '')
+    if (cpfNumbers.length !== 11) {
+      return NextResponse.json(
+        { error: 'CPF deve conter 11 dígitos' },
         { status: 400 }
       )
     }
 
-    // 1. Primeiro, criar o usuário usando a edge function
-    console.log('👤 API: Criando usuário na edge function...')
-    const createUserResponse = await fetch(
-      'https://iawcvuzhrkayzpdyhbii.supabase.co/functions/v1/create-user',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
-        },
-        body: JSON.stringify({ email, password })
-      }
-    )
+    // 1. Criar perfil na tabela profiles para a família
+    console.log('👤 API: Criando perfil da família na tabela profiles...')
+    
+    // Gerar um UUID para o perfil da família
+    const familyProfileId = crypto.randomUUID()
+    
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: familyProfileId,
+        name: name,
+        role: 'familia',
+        phone: phone,
+        email: email || null,
+        cpf: cpf,
+        senha: password,
+        status_aprovacao: 'pendente',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single()
 
-    if (!createUserResponse.ok) {
-      const errorData = await createUserResponse.json()
-      console.error('❌ API: Erro ao criar usuário:', errorData)
+    if (profileError) {
+      console.error('❌ API: Erro ao criar perfil da família:', profileError)
       return NextResponse.json(
-        { error: errorData.error || 'Erro ao criar usuário' },
-        { status: 400 }
+        { error: 'Erro ao criar perfil da família: ' + profileError.message },
+        { status: 500 }
       )
     }
 
-    const userData = await createUserResponse.json()
-    console.log('✅ API: Usuário criado com sucesso:', userData.user?.id)
+    console.log('✅ API: Perfil da família criado com sucesso:', profileData.id)
+
 
     // 2. Depois, criar a família na tabela families
     console.log('👨‍👩‍👧‍👦 API: Inserindo família na tabela families...')
@@ -104,8 +123,9 @@ export async function POST(request: Request) {
       .insert({
         name,
         phone,
-        whatsapp,
-        email,
+        email: email || null,
+        cpf,
+        // cep: cep || null, // Campo CEP será adicionado quando a migração for aplicada
         street,
         neighborhood,
         city,
@@ -113,7 +133,7 @@ export async function POST(request: Request) {
         reference_point: reference,
         income_range: income,
         family_size: familySize ? parseInt(familySize) : null,
-        mentor_email: mentor,
+        mentor_email: mentorEmail,
         status: 'active',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -130,10 +150,43 @@ export async function POST(request: Request) {
 
     console.log('✅ API: Família criada com sucesso:', familyData.id)
 
+    // 3. Inserir membros da família se fornecidos
+    if (familyMembers && Array.isArray(familyMembers) && familyMembers.length > 0) {
+      console.log('👥 API: Inserindo membros da família...')
+      
+      const validMembers = familyMembers.filter(member => member.name && member.name.trim() !== '')
+      
+      if (validMembers.length > 0) {
+        const membersToInsert = validMembers.map(member => ({
+          family_id: familyData.id,
+          nome: member.name,
+          idade: member.age ? parseInt(member.age) : null,
+          cpf: member.cpf || null,
+          relacao_familia: member.relation || null,
+          esta_empregado: member.isEmployed || false,
+          is_responsavel: member.isResponsible || false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }))
+
+        const { data: membersData, error: membersError } = await supabase
+          .from('family_members')
+          .insert(membersToInsert)
+          .select()
+
+        if (membersError) {
+          console.error('❌ API: Erro ao inserir membros da família:', membersError)
+          // Não falhar a operação toda por causa dos membros, apenas logar o erro
+        } else {
+          console.log('✅ API: Membros da família inseridos com sucesso:', membersData?.length)
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       family: familyData,
-      user: userData.user,
+      profile: profileData,
       message: 'Família cadastrada com sucesso!'
     })
 

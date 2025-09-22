@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth"
 import { Header } from "@/components/layout/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -22,8 +23,6 @@ import {
   MapPin,
   Lock,
   CheckCircle,
-  Eye,
-  Lightbulb,
   Loader2,
   AlertCircle,
   Trash2,
@@ -50,49 +49,6 @@ const FormSection = ({ title, icon, children, isRequired }) => (
   </Card>
 )
 
-// Sidebar Component from the plan
-const FormSidebar = ({ formData }) => (
-  <div className="space-y-6 lg:sticky lg:top-24">
-    <Card className="shadow-md">
-      <CardHeader>
-        <CardTitle className="text-base flex items-center text-gray-800">
-          <Eye className="w-4 h-4 mr-2 text-blue-500" />
-          Preview da Família
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3 text-sm text-gray-600">
-          <p>
-            <strong>Nome:</strong> {formData.name || <span className="text-gray-400">Não informado</span>}
-          </p>
-          <p>
-            <strong>Telefone:</strong> {formData.phone || <span className="text-gray-400">Não informado</span>}
-          </p>
-          <p>
-            <strong>Endereço:</strong> {formData.street || <span className="text-gray-400">Não informado</span>}
-          </p>
-          <p>
-            <strong>Mentor:</strong> {formData.mentor || <span className="text-gray-400">Não atribuído</span>}
-          </p>
-        </div>
-      </CardContent>
-    </Card>
-
-    <Card className="bg-blue-50 border-blue-200 shadow-md">
-      <CardHeader>
-        <CardTitle className="text-base flex items-center text-blue-800">
-          <Lightbulb className="w-4 h-4 mr-2 text-blue-600" />
-          Dicas
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="text-sm space-y-3 text-blue-700">
-        <p>💡 Use o formato (XX) XXXXX-XXXX para telefones.</p>
-        <p>📍 Inclua pontos de referência para facilitar visitas.</p>
-        <p>🔐 A senha deve ter pelo menos 8 caracteres.</p>
-      </CardContent>
-    </Card>
-  </div>
-)
 
 // Componente para card dos membros da família
 const FamilyMemberCard = ({ member, index, onUpdate, onRemove, canRemove }) => (
@@ -117,25 +73,103 @@ const FamilyMemberCard = ({ member, index, onUpdate, onRemove, canRemove }) => (
       </div>
     </CardHeader>
     <CardContent className="space-y-4">
-      <div>
-        <Label htmlFor={`member-name-${index}`}>Nome completo</Label>
-        <Input
-          id={`member-name-${index}`}
-          placeholder="Ex. João Silva Santos"
-          value={member.name}
-          onChange={(e) => onUpdate(index, 'name', e.target.value)}
-          className="mt-1"
-        />
+      {/* Primeira linha: Nome, Idade, CPF */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <Label htmlFor={`member-name-${index}`}>Nome</Label>
+          <Input
+            id={`member-name-${index}`}
+            placeholder="Nome completo"
+            value={member.name}
+            onChange={(e) => onUpdate(index, 'name', e.target.value)}
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label htmlFor={`member-age-${index}`}>Idade</Label>
+          <Input
+            id={`member-age-${index}`}
+            type="number"
+            placeholder="Idade"
+            value={member.age}
+            onChange={(e) => onUpdate(index, 'age', e.target.value)}
+            className="mt-1"
+            min="0"
+            max="120"
+          />
+        </div>
+        <div>
+          <Label htmlFor={`member-cpf-${index}`}>CPF (Opcional)</Label>
+          <Input
+            id={`member-cpf-${index}`}
+            placeholder="000.000.000-00"
+            value={member.cpf}
+            onChange={(e) => onUpdate(index, 'cpf', e.target.value)}
+            className="mt-1"
+            maxLength={14}
+          />
+        </div>
       </div>
+
+      {/* Segunda linha: Relação com a Família */}
       <div>
-        <Label htmlFor={`member-cpf-${index}`}>CPF</Label>
-        <Input
-          id={`member-cpf-${index}`}
-          placeholder="000.000.000-00"
-          value={member.cpf}
-          onChange={(e) => onUpdate(index, 'cpf', e.target.value)}
-          className="mt-1"
-        />
+        <Label htmlFor={`member-relation-${index}`}>Relação com a Família</Label>
+        <Select onValueChange={(value) => onUpdate(index, 'relation', value)} value={member.relation}>
+          <SelectTrigger className="mt-1">
+            <SelectValue placeholder="Selecione a relação" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pai">Pai</SelectItem>
+            <SelectItem value="mae">Mãe</SelectItem>
+            <SelectItem value="filho">Filho</SelectItem>
+            <SelectItem value="filha">Filha</SelectItem>
+            <SelectItem value="avo">Avô</SelectItem>
+            <SelectItem value="avo-f">Avó</SelectItem>
+            <SelectItem value="neto">Neto</SelectItem>
+            <SelectItem value="neta">Neta</SelectItem>
+            <SelectItem value="irmao">Irmão</SelectItem>
+            <SelectItem value="irma">Irmã</SelectItem>
+            <SelectItem value="tio">Tio</SelectItem>
+            <SelectItem value="tia">Tia</SelectItem>
+            <SelectItem value="primo">Primo</SelectItem>
+            <SelectItem value="prima">Prima</SelectItem>
+            <SelectItem value="cunhado">Cunhado</SelectItem>
+            <SelectItem value="cunhada">Cunhada</SelectItem>
+            <SelectItem value="sogro">Sogro</SelectItem>
+            <SelectItem value="sogra">Sogra</SelectItem>
+            <SelectItem value="genro">Genro</SelectItem>
+            <SelectItem value="nora">Nora</SelectItem>
+            <SelectItem value="padrasto">Padrasto</SelectItem>
+            <SelectItem value="madrasta">Madrasta</SelectItem>
+            <SelectItem value="enteado">Enteado</SelectItem>
+            <SelectItem value="enteada">Enteada</SelectItem>
+            <SelectItem value="outro">Outro</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Terceira linha: Checkboxes */}
+      <div className="flex items-center space-x-6">
+        <div className="flex items-center space-x-2">
+          <Checkbox 
+            id={`member-employed-${index}`}
+            checked={member.isEmployed}
+            onCheckedChange={(checked) => onUpdate(index, 'isEmployed', checked)}
+          />
+          <Label htmlFor={`member-employed-${index}`} className="text-sm">
+            Está empregado
+          </Label>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Checkbox 
+            id={`member-responsible-${index}`}
+            checked={member.isResponsible}
+            onCheckedChange={(checked) => onUpdate(index, 'isResponsible', checked)}
+          />
+          <Label htmlFor={`member-responsible-${index}`} className="text-sm">
+            É o responsável pela família
+          </Label>
+        </div>
       </div>
     </CardContent>
   </Card>
@@ -170,18 +204,20 @@ const ProgressIndicator = ({ completedFields, totalFields }) => {
 
 export default function NewFamilyPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
+  const [mentorEmail, setMentorEmail] = useState("")
 
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
-    whatsapp: "",
     email: "",
+    cpf: "",
     income: "",
     familySize: "",
-    mentor: "",
+    cep: "",
     state: "",
     city: "",
     street: "",
@@ -194,15 +230,34 @@ export default function NewFamilyPage() {
 
   // Estado para membros da família
   const [familyMembers, setFamilyMembers] = useState([
-    { name: "", cpf: "" } // Pelo menos um membro inicial
+    { 
+      name: "", 
+      age: "", 
+      cpf: "", 
+      relation: "", 
+      isEmployed: false, 
+      isResponsible: false 
+    } // Pelo menos um membro inicial
   ]);
 
-  const totalFields = 16; // Atualizado para incluir membros da família
+  // Obter email do mentor logado
+  useEffect(() => {
+    if (user?.email) {
+      setMentorEmail(user.email)
+    }
+  }, [user])
+
+  const totalFields = 16; // Atualizado: removido whatsapp e mentor, adicionado cpf e cep
   const completedFields = useMemo(() => {
-      const formFieldsCount = Object.values(formData).filter(value => {
-          if (typeof value === 'boolean') return value === true;
-          return value !== '' && value !== null;
-      }).length;
+      // Contar campos obrigatórios preenchidos (email é opcional)
+      const requiredFields = ['name', 'phone', 'cpf', 'income', 'familySize', 'state', 'city', 'street', 'neighborhood', 'reference', 'password', 'confirmPassword'];
+      const optionalFields = ['email', 'cep'];
+      
+      const requiredFieldsCount = requiredFields.filter(field => formData[field] && formData[field].toString().trim() !== '').length;
+      const optionalFieldsCount = optionalFields.filter(field => formData[field] && formData[field].toString().trim() !== '').length;
+      const consentCount = formData.consent ? 1 : 0;
+      
+      const formFieldsCount = requiredFieldsCount + optionalFieldsCount + consentCount;
       
       // Contar membros com pelo menos nome preenchido
       const membersCount = familyMembers.filter(member => member.name.trim() !== '').length;
@@ -225,9 +280,117 @@ export default function NewFamilyPage() {
     if (success) setSuccess("")
   }
 
+  const formatPhone = (value: string) => {
+    // Remove tudo que não é número
+    const numbers = value.replace(/\D/g, '')
+    
+    // Aplica máscara (11) 99999-9999
+    if (numbers.length <= 2) {
+      return `(${numbers}`
+    } else if (numbers.length <= 7) {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`
+    } else {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`
+    }
+  }
+
+  const formatCPF = (value: string) => {
+    // Remove tudo que não é número
+    const numbers = value.replace(/\D/g, '')
+    
+    // Aplica máscara 000.000.000-00
+    if (numbers.length <= 3) {
+      return numbers
+    } else if (numbers.length <= 6) {
+      return `${numbers.slice(0, 3)}.${numbers.slice(3)}`
+    } else if (numbers.length <= 9) {
+      return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6)}`
+    } else {
+      return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9, 11)}`
+    }
+  }
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhone(e.target.value)
+    setFormData((prev) => ({ ...prev, phone: formatted }))
+    if (error) setError("")
+    if (success) setSuccess("")
+  }
+
+  const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCPF(e.target.value)
+    setFormData((prev) => ({ ...prev, cpf: formatted }))
+    if (error) setError("")
+    if (success) setSuccess("")
+  }
+
+  const formatCEP = (value: string) => {
+    // Remove tudo que não é número
+    const numbers = value.replace(/\D/g, '')
+    
+    // Aplica máscara 00000-000
+    if (numbers.length <= 5) {
+      return numbers
+    } else {
+      return `${numbers.slice(0, 5)}-${numbers.slice(5, 8)}`
+    }
+  }
+
+  const handleCEPChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCEP(e.target.value)
+    setFormData((prev) => ({ ...prev, cep: formatted }))
+    if (error) setError("")
+    if (success) setSuccess("")
+  }
+
+  const fetchAddressByCEP = async (cep: string) => {
+    // Remove formatação do CEP
+    const cleanCEP = cep.replace(/\D/g, '')
+    
+    // Verifica se tem 8 dígitos
+    if (cleanCEP.length !== 8) return
+
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCEP}/json/`)
+      const data = await response.json()
+
+      if (data.erro) {
+        console.log('CEP não encontrado')
+        return
+      }
+
+      // Preenche automaticamente os campos de endereço
+      setFormData(prev => ({
+        ...prev,
+        cep: cep, // Usar o CEP original formatado
+        state: data.uf || prev.state,
+        city: data.localidade || prev.city,
+        street: data.logradouro || prev.street,
+        neighborhood: data.bairro || prev.neighborhood
+      }))
+
+    } catch (error) {
+      console.error('Erro ao buscar CEP:', error)
+    }
+  }
+
+  const handleCEPBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const cep = e.target.value
+    if (cep && cep.length >= 8) {
+      fetchAddressByCEP(cep)
+    }
+  }
+
   // Funções para gerenciar membros da família
   const addFamilyMember = () => {
-    setFamilyMembers(prev => [...prev, { name: "", cpf: "" }])
+    setFamilyMembers(prev => [...prev, { 
+      name: "", 
+      age: "", 
+      cpf: "", 
+      relation: "", 
+      isEmployed: false, 
+      isResponsible: false 
+    }])
   }
 
   const removeFamilyMember = (index) => {
@@ -235,6 +398,11 @@ export default function NewFamilyPage() {
   }
 
   const updateFamilyMember = (index, field, value) => {
+    // Aplicar formatação de CPF se necessário
+    if (field === 'cpf') {
+      value = formatCPF(value)
+    }
+    
     setFamilyMembers(prev => prev.map((member, i) => 
       i === index ? { ...member, [field]: value } : member
     ))
@@ -248,8 +416,18 @@ export default function NewFamilyPage() {
       setError("Nome da família é obrigatório")
       return false
     }
-    if (!formData.email.trim()) {
-      setError("E-mail é obrigatório")
+    if (!formData.phone.trim()) {
+      setError("Telefone/WhatsApp é obrigatório")
+      return false
+    }
+    if (!formData.cpf.trim()) {
+      setError("CPF da família é obrigatório")
+      return false
+    }
+    // Validação básica de CPF (11 dígitos)
+    const cpfNumbers = formData.cpf.replace(/\D/g, '')
+    if (cpfNumbers.length !== 11) {
+      setError("CPF deve conter 11 dígitos")
       return false
     }
     if (!formData.password.trim()) {
@@ -296,7 +474,11 @@ export default function NewFamilyPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          mentorEmail: mentorEmail, // Adicionar email do mentor automaticamente
+          familyMembers: familyMembers // Adicionar membros da família
+        }),
       })
 
       const data = await response.json()
@@ -357,63 +539,58 @@ export default function NewFamilyPage() {
           )}
 
           {/* Main Grid Layout */}
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_340px] gap-8 items-start">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
             {/* Form Sections Column 1 */}
-            <div className="space-y-8">
+            <div className="space-y-6">
               <FormSection title="Informações Gerais" icon={<Users />} isRequired>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="name">Nome da família</Label>
+                    <Input id="name" placeholder="Ex. Família Silva" className="mt-1" onChange={handleInputChange} />
+                  </div>
+                  <div>
+                    <Label htmlFor="phone">Telefone/WhatsApp</Label>
+                    <Input 
+                      id="phone" 
+                      placeholder="(XX) XXXXX-XXXX" 
+                      className="mt-1" 
+                      value={formData.phone}
+                      onChange={handlePhoneChange}
+                      maxLength={15}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="cpf">CPF da família</Label>
+                    <Input 
+                      id="cpf" 
+                      placeholder="000.000.000-00" 
+                      className="mt-1" 
+                      value={formData.cpf}
+                      onChange={handleCPFChange}
+                      maxLength={14}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email">E-mail <span className="text-gray-500 text-sm">(opcional)</span></Label>
+                    <Input id="email" type="email" placeholder="Ex. email@exemplo.com" className="mt-1" onChange={handleInputChange} />
+                  </div>
+                </div>
                 <div>
-                  <Label htmlFor="name">Nome da família</Label>
-                  <Input id="name" placeholder="Ex. Família Silva" className="mt-1" onChange={handleInputChange} />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="phone">Telefone</Label>
-                    <Input id="phone" placeholder="(XX) XXXX-XXXX" className="mt-1" onChange={handleInputChange} />
-                  </div>
-                  <div>
-                    <Label htmlFor="whatsapp">WhatsApp</Label>
-                    <Input id="whatsapp" placeholder="(XX) X XXXX-XXXX" className="mt-1" onChange={handleInputChange} />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="email">E-mail</Label>
-                  <Input id="email" type="email" placeholder="Ex. email@exemplo.com" className="mt-1" onChange={handleInputChange} />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="income">Faixa de renda</Label>
-                    <Select onValueChange={(value) => handleSelectChange("income", value)}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0-500">R$ 0 - R$ 500</SelectItem>
-                        <SelectItem value="500-1000">R$ 500 - R$ 1.000</SelectItem>
-                        <SelectItem value="1000-1500">R$ 1.000 - R$ 1.500</SelectItem>
-                        <SelectItem value="1500-2000">R$ 1.500 - R$ 2.000</SelectItem>
-                        <SelectItem value="2000-3000">R$ 2.000 - R$ 3.000</SelectItem>
-                        <SelectItem value="3000-5000">R$ 3.000 - R$ 5.000</SelectItem>
-                        <SelectItem value="5000+">Acima de R$ 5.000</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="mentor">Mentor responsável</Label>
-                    <div className="flex space-x-2 mt-1">
-                      <Select onValueChange={(value) => handleSelectChange("mentor", value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Carlos Mendes">Carlos Mendes</SelectItem>
-                          <SelectItem value="Ana Souza">Ana Souza</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button type="button" variant="outline" size="icon">
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
+                  <Label htmlFor="income">Faixa de renda</Label>
+                  <Select onValueChange={(value) => handleSelectChange("income", value)}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ate-1412">Até R$ 1.412,00</SelectItem>
+                      <SelectItem value="1412-2824">De R$ 1.412,01 a R$ 2.824,00</SelectItem>
+                      <SelectItem value="2824-4236">De R$ 2.824,01 a R$ 4.236,00</SelectItem>
+                      <SelectItem value="4236-5648">De R$ 4.236,01 a R$ 5.648,00</SelectItem>
+                      <SelectItem value="acima-5648">Acima de R$ 5.648,00</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </FormSection>
 
@@ -447,58 +624,122 @@ export default function NewFamilyPage() {
                     className="w-full border-dashed border-2 border-gray-300 hover:border-blue-300 hover:bg-blue-50 text-gray-600"
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Adicionar novo membro
+                    Adicionar Membro
                   </Button>
                 </div>
               </FormSection>
             </div>
 
             {/* Form Sections Column 2 */}
-            <div className="space-y-8">
+            <div className="space-y-6">
               <FormSection title="Endereço" icon={<MapPin />} isRequired>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="cep">CEP <span className="text-gray-500 text-sm">(opcional)</span></Label>
+                    <Input 
+                      id="cep" 
+                      placeholder="00000-000" 
+                      className="mt-1" 
+                      value={formData.cep}
+                      onChange={handleCEPChange}
+                      onBlur={handleCEPBlur}
+                      maxLength={9}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      💡 Digite o CEP para preenchimento automático
+                    </p>
+                  </div>
                   <div>
                     <Label htmlFor="state">Estado</Label>
-                    <Select onValueChange={(value) => handleSelectChange("state", value)}>
+                    <Select onValueChange={(value) => handleSelectChange("state", value)} value={formData.state}>
                       <SelectTrigger className="mt-1">
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="SP">São Paulo</SelectItem>
+                        <SelectItem value="AC">Acre</SelectItem>
+                        <SelectItem value="AL">Alagoas</SelectItem>
+                        <SelectItem value="AP">Amapá</SelectItem>
+                        <SelectItem value="AM">Amazonas</SelectItem>
+                        <SelectItem value="BA">Bahia</SelectItem>
+                        <SelectItem value="CE">Ceará</SelectItem>
+                        <SelectItem value="DF">Distrito Federal</SelectItem>
+                        <SelectItem value="ES">Espírito Santo</SelectItem>
+                        <SelectItem value="GO">Goiás</SelectItem>
+                        <SelectItem value="MA">Maranhão</SelectItem>
+                        <SelectItem value="MT">Mato Grosso</SelectItem>
+                        <SelectItem value="MS">Mato Grosso do Sul</SelectItem>
+                        <SelectItem value="MG">Minas Gerais</SelectItem>
+                        <SelectItem value="PA">Pará</SelectItem>
+                        <SelectItem value="PB">Paraíba</SelectItem>
+                        <SelectItem value="PR">Paraná</SelectItem>
+                        <SelectItem value="PE">Pernambuco</SelectItem>
+                        <SelectItem value="PI">Piauí</SelectItem>
                         <SelectItem value="RJ">Rio de Janeiro</SelectItem>
+                        <SelectItem value="RN">Rio Grande do Norte</SelectItem>
+                        <SelectItem value="RS">Rio Grande do Sul</SelectItem>
+                        <SelectItem value="RO">Rondônia</SelectItem>
+                        <SelectItem value="RR">Roraima</SelectItem>
+                        <SelectItem value="SC">Santa Catarina</SelectItem>
+                        <SelectItem value="SP">São Paulo</SelectItem>
+                        <SelectItem value="SE">Sergipe</SelectItem>
+                        <SelectItem value="TO">Tocantins</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
                     <Label htmlFor="city">Cidade</Label>
-                    <Input id="city" placeholder="São Paulo" className="mt-1" onChange={handleInputChange} />
+                    <Input 
+                      id="city" 
+                      placeholder="São Paulo" 
+                      className="mt-1" 
+                      value={formData.city}
+                      onChange={handleInputChange} 
+                    />
                   </div>
                 </div>
                 <div>
                   <Label htmlFor="street">Rua</Label>
-                  <Input id="street" placeholder="Ex. Rua das Flores, 123" className="mt-1" onChange={handleInputChange} />
+                  <Input 
+                    id="street" 
+                    placeholder="Ex. Rua das Flores, 123" 
+                    className="mt-1" 
+                    value={formData.street}
+                    onChange={handleInputChange} 
+                  />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="neighborhood">Bairro</Label>
-                    <Input id="neighborhood" placeholder="Ex. Vila Nova" className="mt-1" onChange={handleInputChange} />
+                    <Input 
+                      id="neighborhood" 
+                      placeholder="Ex. Vila Nova" 
+                      className="mt-1" 
+                      value={formData.neighborhood}
+                      onChange={handleInputChange} 
+                    />
                   </div>
                   <div>
                     <Label htmlFor="reference">Ponto de referência</Label>
-                    <Input id="reference" placeholder="Ex. Próximo ao mercado" className="mt-1" onChange={handleInputChange} />
+                    <Input 
+                      id="reference" 
+                      placeholder="Ex. Próximo ao mercado" 
+                      className="mt-1" 
+                      value={formData.reference}
+                      onChange={handleInputChange} 
+                    />
                   </div>
                 </div>
               </FormSection>
 
               <FormSection title="Acesso do Responsável" icon={<Lock />}>
-                <p className="text-sm text-gray-600 -mt-2">
-                  Crie uma senha para que o responsável acesse o portal.
+                <p className="text-sm text-gray-600 -mt-2 mb-4">
+                  O acesso será feito através do CPF da família preenchido anteriormente.
                 </p>
-                <div>
-                  <Label htmlFor="autoEmail">E-mail (auto-preenchido)</Label>
-                  <Input id="autoEmail" value={formData.email || ""} disabled className="mt-1 bg-gray-100" />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="autoCPF">CPF da família (auto-preenchido)</Label>
+                    <Input id="autoCPF" value={formData.cpf || ""} disabled className="mt-1 bg-gray-100" />
+                  </div>
                   <div>
                     <Label htmlFor="password">Criar senha</Label>
                     <Input id="password" type="password" placeholder="Mínimo 8 caracteres" className="mt-1" onChange={handleInputChange} />
@@ -527,11 +768,8 @@ export default function NewFamilyPage() {
               </FormSection>
             </div>
 
-            {/* Sidebar Column */}
-            <FormSidebar formData={formData} />
-
             {/* Action Buttons */}
-            <div className="lg:col-span-3 mt-8 flex justify-end space-x-4 border-t pt-6">
+            <div className="lg:col-span-2 mt-8 flex justify-end space-x-4 border-t pt-6">
                 <Button 
                   type="button" 
                   variant="outline" 
@@ -552,21 +790,6 @@ export default function NewFamilyPage() {
                     </>
                   ) : (
                     'Salvar Família'
-                  )}
-                </Button>
-                <Button 
-                  type="button" 
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                  disabled={isLoading}
-                  onClick={(e) => handleSubmit(e, true)}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Salvando...
-                    </>
-                  ) : (
-                    'Salvar e Enviar Dignômetro'
                   )}
                 </Button>
             </div>

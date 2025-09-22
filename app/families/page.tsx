@@ -5,8 +5,9 @@ import { Header } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { VincularFamiliaModal } from "@/components/families/vincular-familia-modal";
+import { AprovarFamiliasModal } from "@/components/families/aprovar-familias-modal";
 import Link from "next/link";
-import { Plus, Search, ChevronRight, Link as LinkIcon } from "lucide-react";
+import { Plus, Search, ChevronRight, Link as LinkIcon, CheckCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { supabaseBrowserClient } from "@/lib/supabase/browser";
 
@@ -58,6 +59,7 @@ export default function FamiliesPage() {
   const [families, setFamilies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isVincularModalOpen, setIsVincularModalOpen] = useState(false);
+  const [isAprovarModalOpen, setIsAprovarModalOpen] = useState(false);
 
   useEffect(() => {
     const loadFamilies = async () => {
@@ -72,6 +74,11 @@ export default function FamiliesPage() {
 
   const handleVincularSuccess = () => {
     // Recarregar a lista após vincular
+    getFamiliesData().then(setFamilies);
+  };
+
+  const handleAprovarSuccess = () => {
+    // Recarregar a lista após aprovação
     getFamiliesData().then(setFamilies);
   };
 
@@ -92,6 +99,13 @@ export default function FamiliesPage() {
               className="border-green-600 text-green-600 hover:bg-green-600 hover:text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
             >
               <LinkIcon className="mr-2" /> Vincular Família
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsAprovarModalOpen(true)}
+              className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
+            >
+              <CheckCircle className="mr-2" /> Aprovar Famílias
             </Button>
             <Link href="/families/new">
               <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
@@ -159,6 +173,13 @@ export default function FamiliesPage() {
         isOpen={isVincularModalOpen}
         onClose={() => setIsVincularModalOpen(false)}
         onSuccess={handleVincularSuccess}
+      />
+
+      {/* Modal de Aprovar Famílias */}
+      <AprovarFamiliasModal
+        isOpen={isAprovarModalOpen}
+        onClose={() => setIsAprovarModalOpen(false)}
+        onSuccess={handleAprovarSuccess}
       />
     </div>
   );
