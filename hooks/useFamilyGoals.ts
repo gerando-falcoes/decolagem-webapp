@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabaseBrowserClient } from '@/lib/supabase/browser'
 
 export interface FamilyGoal {
@@ -18,19 +18,11 @@ export interface FamilyGoal {
 
 export interface FamilyGoalsResponse {
   family_id: string
-  goals: FamilyGoal[]
+  goals: FamilyGoal[] // Apenas metas ativas (não concluídas)
+  allGoals: FamilyGoal[] // Todas as metas para estatísticas
   totalGoals: number
   activeGoals: number  // Metas em andamento
   completedGoals: number  // Metas finalizadas
-  suggestedGoals: number  // Metas personalizadas/customizadas
-}
-
-// Função para classificar se é meta sugerida (personalizada)
-export function isSuggestedGoal(goal: FamilyGoal): boolean {
-  return goal.source === 'manual' || 
-         goal.goal_category?.includes('personalizada') ||
-         goal.goal_category?.includes('mentor') ||
-         !goal.assessment_id
 }
 
 export function useFamilyGoals(familyId: string | null) {
@@ -38,65 +30,66 @@ export function useFamilyGoals(familyId: string | null) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
+  const fetchFamilyGoals = useCallback(async () => {
     if (!familyId) {
       setData(null)
       setLoading(false)
       return
     }
+    try {
+      setLoading(true)
+      setError(null)
+      
+      // Usar API route para contornar RLS
+      const response = await fetch(`/api/goals?family_id=${familyId}`)
+      const apiData = await response.json()
 
-    async function fetchFamilyGoals() {
-      try {
-        setLoading(true)
-        setError(null)
-        
-        // Usar API route para contornar RLS
-        const response = await fetch(`/api/goals?family_id=${familyId}`)
-        const apiData = await response.json()
-
-        if (!response.ok) {
-          throw new Error(apiData.error || 'Erro ao carregar metas')
-        }
-
-        const goals = apiData.goals || []
-        const goalsData = goals || []
-        
-        // Calcular estatísticas conforme solicitado
-        const totalGoals = goalsData.length
-        
-        // ATIVAS: Metas que ainda estão sendo realizadas (PENDENTE, ATIVA, EM_ANDAMENTO)
-        const activeGoals = goalsData.filter(g => 
-          ['PENDENTE', 'ATIVA', 'EM_ANDAMENTO'].includes(g.current_status?.toUpperCase())
-        ).length
-        
-        // CONCLUÍDAS: Metas finalizadas 
-        const completedGoals = goalsData.filter(g => 
-          ['CONCLUIDO', 'CONCLUIDA', 'FINALIZADA'].includes(g.current_status?.toUpperCase())
-        ).length
-        
-        // SUGERIDAS: Metas que não são padrão (criadas com descrição personalizada)
-        const suggestedGoals = goalsData.filter(g => isSuggestedGoal(g)).length
-
-        setData({
-          family_id: familyId,
-          goals: goalsData,
-          totalGoals,
-          activeGoals,
-          completedGoals,
-          suggestedGoals
-        })
-      } catch (err) {
-        setError('Erro ao carregar metas da família')
-        console.error('Erro ao buscar metas:', err)
-      } finally {
-        setLoading(false)
+      if (!response.ok) {
+        throw new Error(apiData.error || 'Erro ao carregar metas')
       }
-    }
 
-    fetchFamilyGoals()
+      const goals = apiData.goals || []
+      const goalsData = goals || []
+      
+      // Calcular estatísticas conforme solicitado
+      const totalGoals = goalsData.length
+      
+      // ATIVAS: Metas que ainda estão sendo realizadas (PENDENTE, ATIVA, EM_ANDAMENTO)
+      const activeGoals = goalsData.filter(g => 
+        ['PENDENTE', 'ATIVA', 'EM_ANDAMENTO'].includes(g.current_status?.toUpperCase())
+      ).length
+      
+      // CONCLUÍDAS: Metas finalizadas 
+      const completedGoals = goalsData.filter(g => 
+        ['CONCLUIDO', 'CONCLUIDA', 'FINALIZADA'].includes(g.current_status?.toUpperCase())
+      ).length
+
+      // Filtrar apenas metas não concluídas para exibição na lista
+      const activeGoalsData = goalsData.filter(g => 
+        !['CONCLUIDO', 'CONCLUIDA', 'FINALIZADA'].includes(g.current_status?.toUpperCase())
+      )
+
+      setData({
+        family_id: familyId,
+        goals: activeGoalsData, // Exibir apenas metas ativas
+        allGoals: goalsData, // Manter todas as metas para estatísticas
+        totalGoals,
+        activeGoals,
+        completedGoals
+      })
+    } catch (err) {
+      setError('Erro ao carregar metas da família')
+      console.error('Erro ao buscar metas:', err)
+    } finally {
+      setLoading(false)
+    }
   }, [familyId])
 
-  const updateGoalStatus = async (goalId: string, newStatus: string) => {
+  useEffect(() => {
+    fetchFamilyGoals()
+  }, [fetchFamilyGoals])
+
+  const updateGoalStatus = useCallback(async (goalId: string, newStatus: string) => {
     try {
       const response = await fetch('/api/goals', {
         method: 'PUT',
@@ -114,12 +107,12 @@ export function useFamilyGoals(familyId: string | null) {
       }
 
       // Recarregar dados para garantir sincronização
-      fetchFamilyGoals()
+      await fetchFamilyGoals()
     } catch (error) {
       console.error('Erro ao atualizar meta:', error)
       throw error
     }
-  }
+  }, [fetchFamilyGoals])
 
   return { 
     data, 
@@ -181,7 +174,7 @@ export function getNextStatus(currentStatus: string): string {
     case 'ATIVA':
     case 'EM_ANDAMENTO':
     case 'SUGERIDA':
-      return 'CONCLUIDO'
+      return 'CONCLUIDA' // Corrigido para CONCLUIDA
     case 'CONCLUIDO':
     case 'CONCLUIDA':
     case 'FINALIZADA':

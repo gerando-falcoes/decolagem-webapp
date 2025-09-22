@@ -364,17 +364,9 @@ const GoalsSummary = ({
 
   return (
     <Card className="p-6 rounded-2xl shadow-md">
-      <CardTitle className="text-lg font-semibold text-gray-800 mb-4 flex items-center justify-between">
-        <div className="flex items-center">
-          <Target size={20} className="mr-2 text-green-500" />
-          Resumo de Metas
-        </div>
-        {isMentorOfFamily && (
-          <Button size="sm" onClick={onAddMeta}>
-            <Plus size={16} className="mr-2" />
-            Adicionar Meta
-          </Button>
-        )}
+      <CardTitle className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+        <Target size={20} className="mr-2 text-green-500" />
+        Resumo de Metas
       </CardTitle>
 
       {/* Alert para recomendações automáticas */}
@@ -428,8 +420,8 @@ const GoalsSummary = ({
         </div>
       ) : goalsData && goalsData.totalGoals > 0 ? (
         <div className="space-y-6">
-          {/* Estatísticas resumidas - Conforme solicitado */}
-          <div className="grid grid-cols-3 gap-4 text-center">
+          {/* Estatísticas resumidas */}
+          <div className="grid grid-cols-2 gap-4 text-center">
             <div className="p-3 bg-blue-50 rounded-lg">
               <div className="text-xl font-bold text-blue-600">{goalsData.activeGoals}</div>
               <div className="text-xs text-gray-600">🎯 Ativas</div>
@@ -440,11 +432,6 @@ const GoalsSummary = ({
               <div className="text-xs text-gray-600">✅ Concluídas</div>
               <div className="text-xs text-gray-500 mt-1">Finalizadas</div>
             </div>
-            <div className="p-3 bg-yellow-50 rounded-lg">
-              <div className="text-xl font-bold text-yellow-600">{goalsData.suggestedGoals}</div>
-              <div className="text-xs text-gray-600">💡 Sugeridas</div>
-              <div className="text-xs text-gray-500 mt-1">Personalizadas</div>
-            </div>
           </div>
           
           {/* Progresso médio */}
@@ -452,8 +439,8 @@ const GoalsSummary = ({
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-medium text-gray-700">Progresso Médio</span>
               <span className="text-sm font-bold text-gray-800">
-                {goalsData.goals.length > 0 
-                  ? Math.round(goalsData.goals.reduce((sum, goal) => sum + goal.progress_percentage, 0) / goalsData.goals.length)
+                {goalsData.allGoals?.length > 0 
+                  ? Math.round(goalsData.allGoals.reduce((sum, goal) => sum + goal.progress_percentage, 0) / goalsData.allGoals.length)
                   : 0
                 }%
               </span>
@@ -463,8 +450,8 @@ const GoalsSummary = ({
                 className="bg-green-500 h-2.5 rounded-full"
                 initial={{ width: 0 }}
                 animate={{ 
-                  width: `${goalsData.goals.length > 0 
-                    ? Math.round(goalsData.goals.reduce((sum, goal) => sum + goal.progress_percentage, 0) / goalsData.goals.length)
+                  width: `${goalsData.allGoals?.length > 0 
+                    ? Math.round(goalsData.allGoals.reduce((sum, goal) => sum + goal.progress_percentage, 0) / goalsData.allGoals.length)
                     : 0
                   }%` 
                 }}
@@ -511,23 +498,6 @@ const GoalsSummary = ({
                         🎯 <strong>Dimensão:</strong> {getGoalDimension(goal)}
                       </p>
                       
-                      {/* Progresso */}
-                      <div className="mb-2">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm text-gray-600">
-                            📊 <strong>Progresso:</strong>
-                          </span>
-                          <span className="text-sm font-medium text-gray-800">
-                            {goal.progress_percentage}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${goal.progress_percentage}%` }}
-                          />
-                        </div>
-                      </div>
                       
                       {/* Informações adicionais */}
                       <div className="grid grid-cols-2 gap-4 text-xs text-gray-500">

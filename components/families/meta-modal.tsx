@@ -81,6 +81,7 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [processingRecommendation, setProcessingRecommendation] = useState<string | null>(null)
+  const [recommendationSettings, setRecommendationSettings] = useState<{[key: string]: {target_date: string, priority: string}}>({})
 
   // Hook para triggers automáticos do dignômetro
   const {
@@ -113,6 +114,38 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
     setIsSubmitting(true)
 
     try {
+      // Validação dos campos obrigatórios
+      if (!formData.goal_title.trim()) {
+        alert('❌ Por favor, preencha o título da meta.')
+        setIsSubmitting(false)
+        return
+      }
+
+      if (!formData.goal_category.trim()) {
+        alert('❌ Por favor, preencha a descrição e passos da meta.')
+        setIsSubmitting(false)
+        return
+      }
+
+      if (!formData.dimension || formData.dimension === '') {
+        alert('❌ Por favor, selecione a dimensão da meta.')
+        setIsSubmitting(false)
+        return
+      }
+
+      if (!formData.target_date) {
+        alert('❌ Por favor, defina uma data alvo para a meta.')
+        setIsSubmitting(false)
+        return
+      }
+
+      console.log('🚀 Criando meta manual:', {
+        titulo: formData.goal_title,
+        descricao: formData.goal_category,
+        dimensao: formData.dimension,
+        data_alvo: formData.target_date
+      })
+
       const response = await fetch('/api/goals', {
         method: 'POST',
         headers: {
@@ -120,15 +153,18 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
         },
         body: JSON.stringify({
           family_id: familyId,
-          goal_title: formData.goal_title,
-          goal_category: formData.goal_category,
-          target_date: formData.target_date || null,
+          goal_title: formData.goal_title.trim(),
+          goal_category: formData.goal_category.trim(),
+          dimension: formData.dimension,
+          target_date: formData.target_date,
+          current_status: 'PENDENTE',
           source: 'manual'
         })
       })
 
       if (response.ok) {
         const result = await response.json()
+        console.log('✅ Meta manual criada com sucesso:', result.goal)
         
         // Reset form
         setFormData({
@@ -138,16 +174,18 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
           dimension: 'Personalizada'
         })
         
-        // Mostrar feedback de sucesso
-        alert('✅ Meta criada com sucesso! A meta aparecerá no Resumo de Metas.')
+        console.log('✅ Meta manual criada! Atualizando página para mostrar no resumo...')
         
         onClose()
-        // Recarregar página para ver as mudanças
+        // Recarregar página para ver as mudanças no resumo
         window.location.reload()
       } else {
         const errorData = await response.json()
         console.error('Erro ao criar meta:', errorData)
-        alert('❌ Erro ao criar meta: ' + (errorData.error || 'Erro desconhecido'))
+        const errorMessage = errorData.details 
+          ? `${errorData.error}\nDetalhes: ${errorData.details}` 
+          : (errorData.error || 'Erro desconhecido')
+        alert('❌ Erro ao criar meta: ' + errorMessage)
       }
     } catch (error) {
       console.error('Erro ao criar meta:', error)
@@ -163,6 +201,16 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
     setProcessingRecommendation(recommendationId)
     try {
       await selectRecommendation(recommendationId)
+      // Inicializar configurações padrão para a recomendação selecionada
+      if (!recommendationSettings[recommendationId]) {
+        setRecommendationSettings(prev => ({
+          ...prev,
+          [recommendationId]: {
+            target_date: '',
+            priority: 'média'
+          }
+        }))
+      }
     } catch (error) {
       console.error('Erro ao selecionar recomendação automática:', error)
     } finally {
@@ -174,6 +222,12 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
     setProcessingRecommendation(recommendationId)
     try {
       await rejectTriggerRecommendation(recommendationId)
+      // Remover configurações da recomendação rejeitada
+      setRecommendationSettings(prev => {
+        const newSettings = { ...prev }
+        delete newSettings[recommendationId]
+        return newSettings
+      })
     } catch (error) {
       console.error('Erro ao rejeitar recomendação automática:', error)
     } finally {
@@ -181,12 +235,56 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
     }
   }
 
+  // Funções para atualizar configurações das recomendações
+  const updateRecommendationSetting = (recommendationId: string, field: 'target_date' | 'priority', value: string) => {
+    setRecommendationSettings(prev => ({
+      ...prev,
+      [recommendationId]: {
+        ...prev[recommendationId],
+        [field]: value
+      }
+    }))
+  }
+
   const handleCreateGoalFromTrigger = async (recommendation: any) => {
+    let settings = recommendationSettings[recommendation.id]
+    
+    // Inicializar configurações padrão se não existirem
+    if (!settings) {
+      settings = {
+        target_date: '',
+        priority: 'média'
+      }
+      setRecommendationSettings(prev => ({
+        ...prev,
+        [recommendation.id]: settings
+      }))
+    }
+    
+    // Validar se data e prioridade foram definidas
+    if (!settings?.target_date) {
+      alert('❌ Por favor, defina a data da meta antes de criá-la.')
+      return
+    }
+    
+    if (!settings?.priority) {
+      alert('❌ Por favor, defina a prioridade da meta antes de criá-la.')
+      return
+    }
+
     setProcessingRecommendation(recommendation.id)
     try {
-      const success = await createGoalFromRecommendation(recommendation)
+      console.log('🚀 Criando meta a partir da recomendação:', recommendation.id, recommendation.goal, settings)
+      const success = await createGoalFromRecommendation(recommendation, settings)
       if (success) {
-        // Recarregar página para ver as mudanças
+        console.log('✅ Meta criada com sucesso! Atualizando página para mostrar no resumo...')
+        // Limpar configurações da recomendação
+        setRecommendationSettings(prev => {
+          const newSettings = { ...prev }
+          delete newSettings[recommendation.id]
+          return newSettings
+        })
+        // Atualizar página para mostrar a meta no resumo
         window.location.reload()
       }
     } catch (error) {
@@ -200,11 +298,23 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
     const selectedRecommendations = getSelectedRecommendations()
     if (selectedRecommendations.length === 0) return
 
+    // Validar se todas as recomendações selecionadas têm configurações
+    const missingSettings = selectedRecommendations.filter(rec => {
+      const settings = recommendationSettings[rec.id]
+      return !settings?.target_date || !settings?.priority
+    })
+
+    if (missingSettings.length > 0) {
+      alert(`❌ Por favor, configure data e prioridade para todas as metas selecionadas (${missingSettings.length} pendente${missingSettings.length > 1 ? 's' : ''}).`)
+      return
+    }
+
     let successCount = 0
     
     for (const recommendation of selectedRecommendations) {
       try {
-        const success = await createGoalFromRecommendation(recommendation)
+        const settings = recommendationSettings[recommendation.id]
+        const success = await createGoalFromRecommendation(recommendation, settings)
         if (success) successCount++
       } catch (error) {
         console.error('Erro ao criar meta:', error)
@@ -212,9 +322,11 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
     }
 
     if (successCount > 0) {
-      // Limpar seleções
+      // Limpar seleções e configurações
       clearSelectedRecommendations()
-      // Recarregar página para ver as mudanças
+      setRecommendationSettings({})
+      console.log(`✅ ${successCount} metas criadas e recomendações removidas da lista`)
+      // Atualizar página para mostrar as metas no resumo
       window.location.reload()
     }
   }
@@ -320,15 +432,6 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
                         Recomendações Baseadas no Dignômetro
                       </h3>
                     </div>
-                    {selectedCount > 0 && (
-                      <Button 
-                        onClick={handleAddSelectedToGoals}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Adicionar {selectedCount} ao Resumo de Metas
-                      </Button>
-                    )}
                   </div>
                   
                   <div className="grid grid-cols-4 gap-4 text-center">
@@ -382,29 +485,135 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {recommendations.map((rec: any) => {
-                        const isSelected = getSelectedRecommendations().some(selected => selected.id === rec.id)
-                        
                         return (
-                          <div key={rec.id} className={`border rounded-lg p-3 transition-colors ${
-                            isSelected ? 'bg-green-50 border-green-300' : 'bg-gray-50'
-                          }`}>
-                            <div className="flex items-start justify-between">
+                          <div key={rec.id} className="border rounded-lg p-3 transition-colors bg-gray-50">
+                            <div className="flex justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center mb-2">
                                   <h4 className="font-medium text-gray-900 mr-2">{rec.goal}</h4>
-                                  <Badge className={`${getPriorityColor(rec.priority_level)} text-xs`}>
-                                    {getPriorityIcon(rec.priority_level)} {rec.priority_level}
-                                  </Badge>
+                                </div>
+                                
+                                {/* Campos de configuração para recomendações */}
+                                <div className="bg-white p-2 rounded-md border space-y-2">
+                                  <div className="flex gap-2">
+                                    {/* Data da Meta */}
+                                    <div className="flex-1 space-y-1">
+                                      <Label className="text-xs font-medium text-gray-700 flex items-center">
+                                        <Calendar className="w-3 h-3 mr-1" />
+                                        Data *
+                                      </Label>
+                                      <div className="flex gap-1">
+                                        {/* Dia */}
+                                        <Select
+                                          value={recommendationSettings[rec.id]?.target_date ? 
+                                            new Date(recommendationSettings[rec.id].target_date).getDate().toString().padStart(2, '0') : ''}
+                                          onValueChange={(day) => {
+                                            const currentDate = recommendationSettings[rec.id]?.target_date ? 
+                                              new Date(recommendationSettings[rec.id].target_date) : new Date()
+                                            const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), parseInt(day))
+                                            updateRecommendationSetting(rec.id, 'target_date', newDate.toISOString().split('T')[0])
+                                          }}
+                                        >
+                                          <SelectTrigger className="h-7 text-xs flex-1">
+                                            <SelectValue placeholder="Dia" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                                              <SelectItem key={day} value={day.toString().padStart(2, '0')} className="text-xs">
+                                                {day}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+
+                                        {/* Mês */}
+                                        <Select
+                                          value={recommendationSettings[rec.id]?.target_date ? 
+                                            (new Date(recommendationSettings[rec.id].target_date).getMonth() + 1).toString().padStart(2, '0') : ''}
+                                          onValueChange={(month) => {
+                                            const currentDate = recommendationSettings[rec.id]?.target_date ? 
+                                              new Date(recommendationSettings[rec.id].target_date) : new Date()
+                                            const newDate = new Date(currentDate.getFullYear(), parseInt(month) - 1, currentDate.getDate())
+                                            updateRecommendationSetting(rec.id, 'target_date', newDate.toISOString().split('T')[0])
+                                          }}
+                                        >
+                                          <SelectTrigger className="h-7 text-xs flex-1">
+                                            <SelectValue placeholder="Mês" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {[
+                                              { value: '01', label: 'Jan' }, { value: '02', label: 'Fev' },
+                                              { value: '03', label: 'Mar' }, { value: '04', label: 'Abr' },
+                                              { value: '05', label: 'Mai' }, { value: '06', label: 'Jun' },
+                                              { value: '07', label: 'Jul' }, { value: '08', label: 'Ago' },
+                                              { value: '09', label: 'Set' }, { value: '10', label: 'Out' },
+                                              { value: '11', label: 'Nov' }, { value: '12', label: 'Dez' }
+                                            ].map(month => (
+                                              <SelectItem key={month.value} value={month.value} className="text-xs">
+                                                {month.label}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+
+                                        {/* Ano */}
+                                        <Select
+                                          value={recommendationSettings[rec.id]?.target_date ? 
+                                            new Date(recommendationSettings[rec.id].target_date).getFullYear().toString() : ''}
+                                          onValueChange={(year) => {
+                                            const currentDate = recommendationSettings[rec.id]?.target_date ? 
+                                              new Date(recommendationSettings[rec.id].target_date) : new Date()
+                                            const newDate = new Date(parseInt(year), currentDate.getMonth(), currentDate.getDate())
+                                            updateRecommendationSetting(rec.id, 'target_date', newDate.toISOString().split('T')[0])
+                                          }}
+                                        >
+                                          <SelectTrigger className="h-7 text-xs flex-1">
+                                            <SelectValue placeholder="Ano" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i).map(year => (
+                                              <SelectItem key={year} value={year.toString()} className="text-xs">
+                                                {year}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Prioridade da Meta */}
+                                    <div className="flex-1 space-y-1">
+                                      <Label htmlFor={`priority_${rec.id}`} className="text-xs font-medium text-gray-700 flex items-center">
+                                        <Tag className="w-3 h-3 mr-1" />
+                                        Prioridade *
+                                      </Label>
+                                      <Select 
+                                        value={recommendationSettings[rec.id]?.priority || 'média'} 
+                                        onValueChange={(value) => updateRecommendationSetting(rec.id, 'priority', value)}
+                                      >
+                                        <SelectTrigger className="h-7 text-xs">
+                                          <SelectValue placeholder="Selecione" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="baixa" className="text-xs">
+                                            🔵 Baixa
+                                          </SelectItem>
+                                          <SelectItem value="média" className="text-xs">
+                                            🟡 Média
+                                          </SelectItem>
+                                          <SelectItem value="alta" className="text-xs">
+                                            🟠 Alta
+                                          </SelectItem>
+                                          <SelectItem value="crítica" className="text-xs">
+                                            🔴 Crítica
+                                          </SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
                         </div>
-                                <p className="text-sm text-gray-600 mb-2">{rec.question}</p>
-                                <div className="flex items-center space-x-4 text-xs text-gray-500">
-                                  <span>🎯 Baseada no dignômetro</span>
-                                  <span>📅 {new Date(rec.generated_at).toLocaleDateString('pt-BR')}</span>
-                                  <span>🔍 Prioridade: {rec.priority_level}</span>
                         </div>
                     </div>
-                              <div className="flex space-x-2 ml-4">
-                                {isSelected ? (
+                              <div className="flex flex-col gap-4 m-4 justify-end">
                                   <Button
                                     size="sm"
                                     variant="outline"
@@ -424,18 +633,6 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
                                       </>
                                     )}
                                   </Button>
-                                ) : (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleSelectTriggerRecommendation(rec.id)}
-                                    disabled={processingRecommendation === rec.id}
-                                    className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                                  >
-                                    <Target className="w-4 h-4 mr-1" />
-                                    Selecionar
-                                  </Button>
-                                )}
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -455,18 +652,6 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
             </Card>
                 ))}
 
-                {/* Botão para limpar seleções */}
-                {selectedCount > 0 && (
-                  <div className="text-center">
-                    <Button 
-                      variant="outline" 
-                      onClick={clearSelectedRecommendations}
-                      className="text-gray-600"
-                    >
-                      Limpar Seleções
-                    </Button>
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -511,7 +696,7 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
               <div className="space-y-2">
                 <Label htmlFor="goal_category" className="text-sm font-medium text-gray-700 flex items-center">
                   <FileText className="w-4 h-4 mr-2" />
-                  Descrição e Passos
+                  Descrição e Passos *
                 </Label>
                 <Textarea
                   id="goal_category"
@@ -559,7 +744,7 @@ export function MetaModal({ isOpen, onClose, familyId }: MetaModalProps) {
               <div className="space-y-2">
                 <Label htmlFor="target_date" className="text-sm font-medium text-gray-700 flex items-center">
                   <Calendar className="w-4 h-4 mr-2" />
-                  Data Alvo (opcional)
+                  Data Alvo *
                 </Label>
                 <Input
                   id="target_date"
