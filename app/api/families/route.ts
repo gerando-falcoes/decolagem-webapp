@@ -41,3 +41,157 @@ export async function GET() {
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }
+
+export async function POST(request: Request) {
+  try {
+    console.log('📝 API: Criando nova família...')
+
+    const body = await request.json()
+    const {
+      name,
+      phone,
+      email,
+      cpf,
+      password,
+      income,
+      familySize,
+      cep,
+      state,
+      city,
+      street,
+      neighborhood,
+      reference,
+      mentorEmail,
+      familyMembers
+    } = body
+
+    // Validações básicas
+    if (!name || !phone || !cpf || !password) {
+      return NextResponse.json(
+        { error: 'Nome, telefone, CPF e senha são obrigatórios' },
+        { status: 400 }
+      )
+    }
+    
+    // Validação do CPF
+    const cpfNumbers = cpf.replace(/\D/g, '')
+    if (cpfNumbers.length !== 11) {
+      return NextResponse.json(
+        { error: 'CPF deve conter 11 dígitos' },
+        { status: 400 }
+      )
+    }
+
+    // 1. Criar perfil na tabela profiles para a família
+    console.log('👤 API: Criando perfil da família na tabela profiles...')
+    
+    // Gerar um UUID para o perfil da família
+    const familyProfileId = crypto.randomUUID()
+    
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: familyProfileId,
+        name: name,
+        role: 'familia',
+        phone: phone,
+        email: email || null,
+        cpf: cpf,
+        senha: password,
+        status_aprovacao: 'pendente',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (profileError) {
+      console.error('❌ API: Erro ao criar perfil da família:', profileError)
+      return NextResponse.json(
+        { error: 'Erro ao criar perfil da família: ' + profileError.message },
+        { status: 500 }
+      )
+    }
+
+    console.log('✅ API: Perfil da família criado com sucesso:', profileData.id)
+
+
+    // 2. Depois, criar a família na tabela families
+    console.log('👨‍👩‍👧‍👦 API: Inserindo família na tabela families...')
+    const { data: familyData, error: familyError } = await supabase
+      .from('families')
+      .insert({
+        name,
+        phone,
+        email: email || null,
+        cpf,
+        // cep: cep || null, // Campo CEP será adicionado quando a migração for aplicada
+        street,
+        neighborhood,
+        city,
+        state,
+        reference_point: reference,
+        income_range: income,
+        family_size: familySize ? parseInt(familySize) : null,
+        mentor_email: mentorEmail,
+        status: 'active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (familyError) {
+      console.error('❌ API: Erro ao inserir família:', familyError)
+      // Se a família falhou, idealmente deveria reverter o usuário criado
+      // Mas por enquanto apenas retorna o erro
+      return NextResponse.json({ error: familyError.message }, { status: 500 })
+    }
+
+    console.log('✅ API: Família criada com sucesso:', familyData.id)
+
+    // 3. Inserir membros da família se fornecidos
+    if (familyMembers && Array.isArray(familyMembers) && familyMembers.length > 0) {
+      console.log('👥 API: Inserindo membros da família...')
+      
+      const validMembers = familyMembers.filter(member => member.name && member.name.trim() !== '')
+      
+      if (validMembers.length > 0) {
+        const membersToInsert = validMembers.map(member => ({
+          family_id: familyData.id,
+          nome: member.name,
+          idade: member.age ? parseInt(member.age) : null,
+          cpf: member.cpf || null,
+          relacao_familia: member.relation || null,
+          esta_empregado: member.isEmployed || false,
+          is_responsavel: member.isResponsible || false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }))
+
+        const { data: membersData, error: membersError } = await supabase
+          .from('family_members')
+          .insert(membersToInsert)
+          .select()
+
+        if (membersError) {
+          console.error('❌ API: Erro ao inserir membros da família:', membersError)
+          // Não falhar a operação toda por causa dos membros, apenas logar o erro
+        } else {
+          console.log('✅ API: Membros da família inseridos com sucesso:', membersData?.length)
+        }
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      family: familyData,
+      profile: profileData,
+      message: 'Família cadastrada com sucesso!'
+    })
+
+  } catch (error) {
+    console.error('❌ API: Erro geral ao criar família:', error)
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
+  }
+}
