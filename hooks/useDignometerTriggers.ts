@@ -43,7 +43,10 @@ interface UseDignometerTriggersReturn {
   clearSelectedRecommendations: () => void
   
   // Função para criar meta real a partir de recomendação
-  createGoalFromRecommendation: (recommendation: AutoRecommendation) => Promise<boolean>
+  createGoalFromRecommendation: (recommendation: AutoRecommendation, settings?: {target_date: string, priority: string}) => Promise<boolean>
+  
+  // Função para limpar cache e forçar refresh
+  clearCacheAndRefresh: () => void
   
   // Trigger manual para detectar mudanças
   triggerDignometerCheck: (answers: { [key: string]: boolean }) => Promise<void>
@@ -239,8 +242,21 @@ export function useDignometerTriggers(familyId: string | null): UseDignometerTri
     setCachedData(updatedData)
   }, [data, setCachedData])
 
+  // Função para limpar cache e forçar refresh
+  const clearCacheAndRefresh = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      const cacheKey = getCacheKey()
+      if (cacheKey) {
+        localStorage.removeItem(cacheKey)
+        console.log('🗑️ Cache limpo para forçar refresh')
+      }
+    }
+    // Recarregar dados do servidor
+    fetchAutoRecommendations()
+  }, [getCacheKey, fetchAutoRecommendations])
+
   // Função para criar meta real a partir de recomendação
-  const createGoalFromRecommendation = useCallback(async (recommendation: AutoRecommendation): Promise<boolean> => {
+  const createGoalFromRecommendation = useCallback(async (recommendation: AutoRecommendation, settings?: {target_date: string, priority: string}): Promise<boolean> => {
     if (!familyId) return false
 
     try {
@@ -252,11 +268,13 @@ export function useDignometerTriggers(familyId: string | null): UseDignometerTri
         body: JSON.stringify({
           family_id: familyId,
           goal_title: recommendation.goal,
-          goal_category: recommendation.dimension,
+          goal_category: `Meta gerada automaticamente - ${recommendation.dimension}`,
+          target_date: settings?.target_date,
           current_status: 'PENDENTE',
-          notes: `Meta gerada automaticamente a partir do dignômetro. Dimensão: ${recommendation.dimension}. Prioridade: ${recommendation.priority_level}.`,
+          notes: `Meta gerada automaticamente a partir do dignômetro. Dimensão: ${recommendation.dimension}. Prioridade definida pelo mentor: ${settings?.priority || 'não definida'}.`,
           source: 'auto_recommendation',
-          recommendation_id: recommendation.id
+          recommendation_id: recommendation.id,
+          priority: settings?.priority
         })
       })
 
@@ -268,21 +286,44 @@ export function useDignometerTriggers(familyId: string | null): UseDignometerTri
       
       if (result.success) {
         console.log('✅ Meta criada a partir de recomendação:', recommendation.id)
+        console.log('🔍 Debug - Dados antes da remoção:', {
+          total_antes: data?.total_recommendations,
+          recomendacoes_antes: data?.auto_recommendations?.length,
+          id_a_remover: recommendation.id
+        })
         
-        // Marcar recomendação como usada (remover da lista)
-        const updatedRecommendations = data?.auto_recommendations.filter(rec => 
-          rec.id !== recommendation.id
-        ) || []
+        // Remover recomendação da lista ao criar meta
+        const updatedRecommendations = data?.auto_recommendations.filter(rec => {
+          const shouldKeep = rec.id !== recommendation.id
+          if (!shouldKeep) {
+            console.log('🗑️ Removendo recomendação da lista:', rec.id, rec.goal)
+          }
+          return shouldKeep
+        }) || []
+
+        console.log('🔍 Debug - Após remoção:', {
+          total_antes: data?.auto_recommendations?.length,
+          total_depois: updatedRecommendations.length,
+          recomendacao_removida: !updatedRecommendations.find(r => r.id === recommendation.id),
+          ids_restantes: updatedRecommendations.map(r => r.id)
+        })
 
         if (data) {
           const updatedData = {
             ...data,
             auto_recommendations: updatedRecommendations,
-            total_recommendations: updatedRecommendations.length
+            total_recommendations: updatedRecommendations.length, // Total de recomendações restantes
+            critical_recommendations: updatedRecommendations.filter(rec => rec.priority_level === 'critical').length,
+            selected_recommendations: updatedRecommendations.filter(rec => rec.status === 'selected').length
           }
 
+          console.log('💾 Atualizando estado e cache...')
           setData(updatedData)
           setCachedData(updatedData)
+          
+          console.log(`📊 Recomendações restantes: ${updatedRecommendations.length} (removida: ${recommendation.goal})`)
+        } else {
+          console.log('❌ ERRO: data é null, não foi possível atualizar estado!')
         }
         
         return true
@@ -382,6 +423,7 @@ export function useDignometerTriggers(familyId: string | null): UseDignometerTri
     getSelectedRecommendations,
     clearSelectedRecommendations,
     createGoalFromRecommendation,
+    clearCacheAndRefresh,
     triggerDignometerCheck
   }
 }

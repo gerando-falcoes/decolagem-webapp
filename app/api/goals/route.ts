@@ -31,6 +31,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    console.log('📝 Dados recebidos para criar meta:', body)
+    
     const { 
       family_id, 
       goal_title, 
@@ -38,11 +40,14 @@ export async function POST(request: NextRequest) {
       target_date,
       created_by,
       source = 'manual',
-      assessment_id = null
+      assessment_id = null,
+      dimension,
+      current_status = 'PENDENTE'
     } = body
 
     // Validações
     if (!family_id || !goal_title) {
+      console.log('❌ Validação falhou - campos obrigatórios ausentes')
       return NextResponse.json({ 
         error: 'family_id e goal_title são obrigatórios' 
       }, { status: 400 })
@@ -62,23 +67,32 @@ export async function POST(request: NextRequest) {
     }
 
     // Criar a meta
+    console.log('💾 Inserindo meta na base de dados...')
+    const insertData = {
+      family_id,
+      assessment_id,
+      goal_title,
+      goal_category: goal_category || 'Meta personalizada criada pelo mentor',
+      target_date,
+      current_status: current_status || 'PENDENTE',
+      progress_percentage: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+    console.log('📋 Dados para inserção:', insertData)
+    
     const { data: newGoal, error: goalError } = await supabaseServerClient
       .from('family_goals')
-      .insert({
-        family_id,
-        assessment_id,
-        goal_title,
-        goal_category: goal_category || 'Meta personalizada criada pelo mentor',
-        target_date,
-        current_status: 'PENDENTE',
-        progress_percentage: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
+      .insert(insertData)
       .select()
       .single()
 
-    if (goalError) throw goalError
+    if (goalError) {
+      console.log('❌ Erro do Supabase ao inserir meta:', goalError)
+      throw goalError
+    }
+    
+    console.log('✅ Meta criada com sucesso:', newGoal)
 
     return NextResponse.json({
       success: true,
@@ -86,9 +100,10 @@ export async function POST(request: NextRequest) {
       message: `Meta "${goal_title}" criada com sucesso para ${family.name}`
     })
   } catch (error) {
-    console.error('Erro ao criar meta:', error)
+    console.error('Erro detalhado ao criar meta:', error)
     return NextResponse.json({ 
-      error: 'Erro interno do servidor ao criar meta' 
+      error: 'Erro interno do servidor ao criar meta',
+      details: error instanceof Error ? error.message : 'Erro desconhecido'
     }, { status: 500 })
   }
 }
