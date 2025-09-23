@@ -1,196 +1,202 @@
 "use client";
 
-import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { Header } from '@/components/layout/header'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { ArrowLeft, ArrowRight, Loader2, AlertCircle } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Header } from "@/components/layout/header";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { ArrowLeft, ArrowRight, Loader2, AlertCircle } from "lucide-react";
 
-import { useDiagnostico } from './hooks/useDiagnostico'
-import { useProgress } from './hooks/useProgress'
-import { QuestionCard } from './components/QuestionCard'
-import { ProgressBar } from './components/ProgressBar'
-import { ResultCard } from './components/ResultCard'
-import { DiagnosticoService } from '@/lib/diagnostico'
-import { supabaseBrowserClient } from '@/lib/supabase/browser'
+import { useDiagnostico } from "./hooks/useDiagnostico";
+import { useProgress } from "./hooks/useProgress";
+import { QuestionCard } from "./components/QuestionCard";
+import { ProgressBar } from "./components/ProgressBar";
+import { ResultCard } from "./components/ResultCard";
+import { DiagnosticoService } from "@/lib/diagnostico";
+import { supabaseBrowserClient } from "@/lib/supabase/browser";
 
 export default function DignometroPage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const supabase = supabaseBrowserClient
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const supabase = supabaseBrowserClient;
 
   // Estados principais
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isCompleted, setIsCompleted] = useState(false)
-  const [finalScore, setFinalScore] = useState(0)
-  const [familyId, setFamilyId] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [authError, setAuthError] = useState<string | null>(null)
-  const [userEmail, setUserEmail] = useState<string>('')
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [finalScore, setFinalScore] = useState(0);
+  const [familyId, setFamilyId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string>("");
 
   // Hooks personalizados
-  const { responses, updateResponse, getTotalAnswered, clearResponses } = useDiagnostico()
-  const { 
-    currentStep, 
-    totalSteps, 
-    nextStep, 
-    previousStep, 
-    canGoNext, 
-    canGoPrevious, 
+  const { responses, updateResponse, getTotalAnswered, clearResponses } =
+    useDiagnostico();
+  const {
+    currentStep,
+    totalSteps,
+    nextStep,
+    previousStep,
+    canGoNext,
+    canGoPrevious,
     currentQuestion,
-    resetProgress 
-  } = useProgress()
+    resetProgress,
+  } = useProgress();
 
   // Verificar autenticação e buscar familyId
   useEffect(() => {
     async function initializePage() {
       try {
-        setIsLoading(true)
+        setIsLoading(true);
 
         // Verificar se foi passado familyId via URL (vindo do formulário de cadastro)
-        const urlFamilyId = searchParams.get('familyId')
+        const urlFamilyId = searchParams.get("familyId");
         if (urlFamilyId) {
-          setFamilyId(urlFamilyId)
-          setUserEmail('sistema@dignometro.com') // Email padrão para novos cadastros
-          setIsLoading(false)
-          return
+          setFamilyId(urlFamilyId);
+          setUserEmail("sistema@dignometro.com"); // Email padrão para novos cadastros
+          setIsLoading(false);
+          return;
         }
 
         // Verificar usuário autenticado
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
-        
+        const {
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser();
+
         if (authError || !user) {
-          setAuthError('Usuário não autenticado. Faça login para continuar.')
-          setIsLoading(false)
-          return
+          setAuthError("Usuário não autenticado. Faça login para continuar.");
+          setIsLoading(false);
+          return;
         }
 
-        setUserEmail(user.email || '')
+        setUserEmail(user.email || "");
 
         // Buscar família do mentor logado
         const { data: families, error: familiesError } = await supabase
-          .from('families')
-          .select('id, name')
-          .eq('mentor_email', user.email)
-          .limit(1)
+          .from("families")
+          .select("id, name")
+          .eq("mentor_email", user.email)
+          .limit(1);
 
         if (familiesError) {
-          console.error('Erro ao buscar família:', familiesError)
-          setAuthError('Erro ao buscar dados da família')
-          setIsLoading(false)
-          return
+          console.error("Erro ao buscar família:", familiesError);
+          setAuthError("Erro ao buscar dados da família");
+          setIsLoading(false);
+          return;
         }
 
         if (!families || families.length === 0) {
-          setAuthError('Nenhuma família vinculada a este mentor')
-          setIsLoading(false)
-          return
+          setAuthError("Nenhuma família vinculada a este mentor");
+          setIsLoading(false);
+          return;
         }
 
-        setFamilyId(families[0].id)
-
+        setFamilyId(families[0].id);
       } catch (error) {
-        console.error('Erro na inicialização:', error)
-        setAuthError('Erro interno. Tente novamente.')
+        console.error("Erro na inicialização:", error);
+        setAuthError("Erro interno. Tente novamente.");
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
 
-    initializePage()
-  }, [searchParams, supabase])
+    initializePage();
+  }, [searchParams, supabase]);
 
   // Função para calcular score
   const calculateScore = (responses: Record<string, boolean>): number => {
-    return DiagnosticoService.calculateScore(responses)
-  }
+    return DiagnosticoService.calculateScore(responses);
+  };
 
   // Função para obter nível de pobreza
   const getPovertyLevel = (score: number) => {
-    return DiagnosticoService.getPovertyLevel(score)
-  }
+    return DiagnosticoService.getPovertyLevel(score);
+  };
 
   // Função para submeter diagnóstico
   const handleSubmit = async () => {
     if (!familyId) {
-      setAuthError('ID da família não encontrado')
-      return
+      setAuthError("ID da família não encontrado.");
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
-      const score = calculateScore(responses)
-      
-      const response = await fetch('/api/dignometro/submit', {
-        method: 'POST',
+      const score = calculateScore(responses);
+
+      const response = await fetch("/api/dignometro/submit", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           familyId,
           responses,
-          userEmail
+          userEmail,
         }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao submeter diagnóstico')
+        throw new Error(data.error || "Erro ao submeter diagnóstico");
       }
 
       // Salvar resultado final
-      DiagnosticoService.saveDiagnostico(familyId, userEmail, responses)
-      
-      setFinalScore(score)
-      setIsCompleted(true)
+      DiagnosticoService.saveDiagnostico(familyId, userEmail, responses);
 
-      console.log('✅ Diagnóstico submetido com sucesso:', data)
+      setFinalScore(score);
+      setIsCompleted(true);
 
+      console.log("✅ Diagnóstico submetido com sucesso:", data);
     } catch (error) {
-      console.error('❌ Erro ao submeter diagnóstico:', error)
-      setAuthError(error instanceof Error ? error.message : 'Erro ao submeter diagnóstico')
+      console.error("❌ Erro ao submeter diagnóstico:", error);
+      setAuthError(
+        error instanceof Error ? error.message : "Erro ao submeter diagnóstico"
+      );
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   // Função para avançar (próxima pergunta ou submeter)
   const handleNext = () => {
     if (currentStep === totalSteps - 1) {
       // Última pergunta - submeter
-      handleSubmit()
+      handleSubmit();
     } else {
-      nextStep()
+      nextStep();
     }
-  }
+  };
 
   // Função para voltar
   const handlePrevious = () => {
-    previousStep()
-  }
+    previousStep();
+  };
 
   // Função para recomeçar
   const handleRestart = () => {
-    clearResponses()
-    resetProgress()
-    setIsCompleted(false)
-    setFinalScore(0)
-    setAuthError(null)
-    
+    clearResponses();
+    resetProgress();
+    setIsCompleted(false);
+    setFinalScore(0);
+    setAuthError(null);
+
     // Recarregar página para garantir estado limpo
-    window.location.reload()
-  }
+    window.location.reload();
+  };
 
   // Função para ir ao dashboard
   const handleGoToDashboard = () => {
-    router.push('/dashboard')
-  }
+    router.push("/dashboard");
+  };
 
   // Verificar se a pergunta atual foi respondida
-  const isCurrentQuestionAnswered = currentQuestion ? responses[currentQuestion.id] !== undefined : false
+  const isCurrentQuestionAnswered = currentQuestion
+    ? responses[currentQuestion.id] !== undefined
+    : false;
 
   // Renderização condicional
   if (isLoading) {
@@ -206,7 +212,7 @@ export default function DignometroPage() {
           </Card>
         </div>
       </div>
-    )
+    );
   }
 
   if (authError) {
@@ -219,14 +225,17 @@ export default function DignometroPage() {
               <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
               <h2 className="text-xl font-semibold text-gray-900">Erro</h2>
               <p className="text-gray-600">{authError}</p>
-              <Button onClick={() => router.push('/dashboard')} className="w-full">
+              <Button
+                onClick={() => router.push("/dashboard")}
+                className="w-full"
+              >
                 Voltar ao Dashboard
               </Button>
             </CardContent>
           </Card>
         </div>
       </div>
-    )
+    );
   }
 
   if (isCompleted) {
@@ -241,20 +250,21 @@ export default function DignometroPage() {
           />
         </div>
       </div>
-    )
+    );
   }
 
   // Renderização principal do questionário
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      
+
       <div className="container mx-auto px-4 py-8 space-y-8">
         {/* Cabeçalho */}
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold text-gray-900">Dignômetro</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Diagnóstico de pobreza multidimensional. Responda as perguntas para avaliar a situação da família.
+            Diagnóstico de pobreza multidimensional. Responda as perguntas para
+            avaliar a situação da família.
           </p>
         </div>
 
@@ -313,5 +323,5 @@ export default function DignometroPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
