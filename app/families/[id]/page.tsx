@@ -318,16 +318,20 @@ const FamilyStats = ({ family }: { family: FamilyOverview }) => (
         <div className="text-sm text-gray-600">Crianças</div>
       </div>
       <div className="text-center p-3 bg-purple-50 rounded-lg">
-        <div className="text-2xl font-bold text-purple-600">{family.total_assessments}</div>
+        <div className="text-2xl font-bold text-purple-600">
+          {family.total_assessments > 0 ? family.total_assessments : '--'}
+        </div>
         <div className="text-sm text-gray-600">Avaliações</div>
       </div>
       <div className="text-center p-3 bg-orange-50 rounded-lg">
-        <div className="text-2xl font-bold text-orange-600">{family.total_goals}</div>
+        <div className="text-2xl font-bold text-orange-600">
+          {family.total_goals > 0 ? family.total_goals : '--'}
+        </div>
         <div className="text-sm text-gray-600">Metas</div>
       </div>
     </div>
     
-    {family.days_since_last_assessment && (
+    {family.days_since_last_assessment && family.days_since_last_assessment > 0 && (
       <div className="mt-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
         <p className="text-yellow-800 text-sm">
           <Calendar size={16} className="inline mr-2" />
