@@ -40,69 +40,52 @@ function DignometroDashboardContent() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8">
+          <div className="container mx-auto px-4 py-4">
       {/* Header */}
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold text-gray-900">Dashboard Dignômetro</h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard Dignômetro</h1>
+        <p className="text-sm text-gray-600">
           Acompanhe o progresso das famílias e identifique oportunidades de melhoria
         </p>
       </div>
 
       {/* Loading */}
       {isLoading && (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mr-2" />
-          <span className="text-lg">Carregando dados...</span>
+        <div className="flex items-center justify-center py-6">
+          <Loader2 className="h-6 w-6 animate-spin text-blue-600 mr-2" />
+          <span className="text-sm">Carregando dados...</span>
         </div>
       )}
 
-          {/* Stats */}
-          {!isLoading && (
-            <>
-              <DignometroStats />
-
-              {/* Tabela de Famílias */}
-              <FamiliesTable />
-
-              {/* Gráficos e componentes */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <PovertyLevelChart />
-
-            <TimelineChart />
+      {/* Main Layout */}
+      {!isLoading && (
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Sidebar com KPIs */}
+          <div className="lg:w-72 flex-shrink-0 space-y-4">
+            <DignometroStats />
           </div>
 
-          {/* Análise de Dimensões */}
-          <DimensionChart />
+          {/* Conteúdo Principal */}
+          <div className="flex-1 space-y-4">
+            {/* Tabela de Famílias */}
+            <FamiliesTable />
 
-          {/* Ranking de Mentores */}
-          <MentorRanking />
+            {/* Gráficos em Grid Compacto */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+              <PovertyLevelChart />
+              <TimelineChart />
+              <DimensionChart />
+            </div>
 
-          {/* Mapa Geográfico */}
-          <GeographicChart />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <MentorRanking />
+              <GeographicChart />
+            </div>
 
-          {/* Matriz de Metas */}
-          <GoalsMatrix />
-
-          {/* Debug info (remova em produção) */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Debug Info</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>Total de famílias: {families.length}</p>
-              <p>Semanas na timeline: {timeline.length}</p>
-              <details className="mt-4">
-                <summary className="cursor-pointer text-blue-600">
-                  Ver dados brutos (clique para expandir)
-                </summary>
-                <pre className="mt-2 p-4 bg-gray-100 rounded text-xs overflow-auto">
-                  {JSON.stringify({ families: families.slice(0, 3), timeline: timeline.slice(0, 3) }, null, 2)}
-                </pre>
-              </details>
-            </CardContent>
-          </Card>
-        </>
+            {/* Matriz de Metas */}
+            <GoalsMatrix />
+          </div>
+        </div>
       )}
     </div>
   );

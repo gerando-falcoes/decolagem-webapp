@@ -12,8 +12,8 @@ export function GoalsMatrix() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Target size={18} />
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Target size={16} />
             Matriz de Metas
           </CardTitle>
         </CardHeader>
@@ -34,8 +34,8 @@ export function GoalsMatrix() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Target size={18} />
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Target size={16} />
             Matriz de Metas
           </CardTitle>
         </CardHeader>
@@ -56,8 +56,8 @@ export function GoalsMatrix() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Target size={18} />
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Target size={16} />
             Matriz de Metas
           </CardTitle>
         </CardHeader>
@@ -112,8 +112,8 @@ export function GoalsMatrix() {
     return (
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Target size={18} />
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Target size={16} />
             Matriz de Metas
           </CardTitle>
           <p className="text-sm text-gray-600">

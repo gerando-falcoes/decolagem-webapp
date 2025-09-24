@@ -18,7 +18,7 @@ export function PovertyLevelChart() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-64 flex items-center justify-center">
+          <div className="h-48 flex items-center justify-center">
             <div className="text-center">
               <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-2" />
               <p className="text-gray-500">Carregando dados...</p>
@@ -40,7 +40,7 @@ export function PovertyLevelChart() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-64 flex items-center justify-center">
+          <div className="h-48 flex items-center justify-center">
             <div className="text-center">
               <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-2" />
               <p className="text-red-600">Erro ao carregar dados</p>
@@ -62,7 +62,7 @@ export function PovertyLevelChart() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-64 flex items-center justify-center">
+          <div className="h-48 flex items-center justify-center">
             <div className="text-center">
               <PieChart className="h-12 w-12 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500 text-lg font-medium">Nenhum dado disponível</p>
@@ -77,14 +77,14 @@ export function PovertyLevelChart() {
   const total = povertyData.reduce((sum, item) => sum + item.value, 0);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <PieChart size={20} />
-          Distribuição por Níveis de Pobreza
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <PieChart size={16} />
+            Níveis de Pobreza
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
         <div className="space-y-4">
           {/* Legend and Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

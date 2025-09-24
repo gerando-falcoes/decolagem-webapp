@@ -82,16 +82,16 @@ export function TimelineChart() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar size={20} />
-          Timeline de Evolução (Últimas 12 semanas)
-        </CardTitle>
-      </CardHeader>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Calendar size={16} />
+            Timeline Evolução
+          </CardTitle>
+        </CardHeader>
       <CardContent>
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Métricas resumo */}
-          <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+          <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-lg">
             <div className="text-center">
               <p className="text-2xl font-bold text-blue-600">{totalAssessments}</p>
               <p className="text-sm text-gray-600">Total de Avaliações</p>

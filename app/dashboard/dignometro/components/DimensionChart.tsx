@@ -18,7 +18,7 @@ export function DimensionChart() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-64 flex items-center justify-center">
+          <div className="h-32 flex items-center justify-center">
             <div className="text-center">
               <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-2" />
               <p className="text-gray-500">Analisando dimensões...</p>
@@ -40,7 +40,7 @@ export function DimensionChart() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-64 flex items-center justify-center">
+          <div className="h-32 flex items-center justify-center">
             <div className="text-center">
               <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-2" />
               <p className="text-red-600">Erro ao analisar dimensões</p>
@@ -62,7 +62,7 @@ export function DimensionChart() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-64 flex items-center justify-center">
+          <div className="h-32 flex items-center justify-center">
             <div className="text-center">
               <Target className="h-12 w-12 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500 text-lg font-medium">Nenhum dado disponível</p>

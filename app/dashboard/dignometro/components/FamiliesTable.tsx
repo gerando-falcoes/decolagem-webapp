@@ -258,19 +258,16 @@ export function FamiliesTable() {
 
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Users size={18} />
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Users size={16} />
           Informações das Famílias
         </CardTitle>
-        <p className="text-sm text-gray-600">
-          Lista detalhada de todas as famílias cadastradas no sistema
-        </p>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* Filtros */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Barra de pesquisa avançada */}
             <FamilySearchBar
               onFamilySelect={(familyId) => setSelectedFamilyId(familyId)}
@@ -324,27 +321,27 @@ export function FamiliesTable() {
           </div>
 
           {/* Estatísticas rápidas */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 py-2 bg-gray-50 rounded-lg">
+          <div className="grid grid-cols-4 gap-2 py-2 bg-gray-50 rounded-lg">
             <div className="text-center">
-              <p className="text-base font-bold text-blue-600">
+              <p className="text-sm font-bold text-blue-600">
                 {familiesData.length}
               </p>
               <p className="text-xs text-gray-600">Total</p>
             </div>
             <div className="text-center">
-              <p className="text-base font-bold text-green-600">
+              <p className="text-sm font-bold text-green-600">
                 {familiesData.filter(f => f.status_aprovacao === 'aprovado').length}
               </p>
               <p className="text-xs text-gray-600">Aprovadas</p>
             </div>
             <div className="text-center">
-              <p className="text-base font-bold text-yellow-600">
+              <p className="text-sm font-bold text-yellow-600">
                 {familiesData.filter(f => f.poverty_score !== null).length}
               </p>
               <p className="text-xs text-gray-600">Avaliadas</p>
             </div>
             <div className="text-center">
-              <p className="text-base font-bold text-purple-600">
+              <p className="text-sm font-bold text-purple-600">
                 {filteredData.length}
               </p>
               <p className="text-xs text-gray-600">Filtradas</p>
@@ -352,31 +349,31 @@ export function FamiliesTable() {
           </div>
 
           {/* Tabela */}
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-96 overflow-y-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-2 font-semibold text-gray-700">Família</th>
-                  <th className="text-left py-3 px-2 font-semibold text-gray-700">Localização</th>
-                  <th className="text-left py-3 px-2 font-semibold text-gray-700">Mentor</th>
-                  <th className="text-left py-3 px-2 font-semibold text-gray-700">Status</th>
-                  <th className="text-left py-3 px-2 font-semibold text-gray-700">Composição</th>
-                  <th className="text-left py-3 px-2 font-semibold text-gray-700">Renda</th>
-                  <th className="text-left py-3 px-2 font-semibold text-gray-700">Score</th>
-                  <th className="text-left py-3 px-2 font-semibold text-gray-700">Nível</th>
-                  <th className="text-left py-3 px-2 font-semibold text-gray-700">Última Aval.</th>
-                  <th className="text-center py-3 px-2 font-semibold text-gray-700">Ações</th>
+                  <th className="text-left py-2 px-2 font-semibold text-gray-700 text-xs">Família</th>
+                  <th className="text-left py-2 px-2 font-semibold text-gray-700 text-xs">Localização</th>
+                  <th className="text-left py-2 px-2 font-semibold text-gray-700 text-xs">Mentor</th>
+                  <th className="text-left py-2 px-2 font-semibold text-gray-700 text-xs">Status</th>
+                  <th className="text-left py-2 px-2 font-semibold text-gray-700 text-xs">Composição</th>
+                  <th className="text-left py-2 px-2 font-semibold text-gray-700 text-xs">Renda</th>
+                  <th className="text-left py-2 px-2 font-semibold text-gray-700 text-xs">Score</th>
+                  <th className="text-left py-2 px-2 font-semibold text-gray-700 text-xs">Nível</th>
+                  <th className="text-left py-2 px-2 font-semibold text-gray-700 text-xs">Última Aval.</th>
+                  <th className="text-center py-2 px-2 font-semibold text-gray-700 text-xs">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredData.slice(0, 20).map((family) => (
                   <tr key={family.family_id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td className="py-3 px-2">
+                    <td className="py-2 px-2">
                       <div>
                         <p className="font-medium text-gray-900">{family.family_name}</p>
                       </div>
                     </td>
-                    <td className="py-3 px-2">
+                    <td className="py-2 px-2">
                       <div className="flex items-center gap-1">
                         <MapPin size={12} className="text-gray-400" />
                         <span className="text-gray-600">
@@ -384,17 +381,17 @@ export function FamiliesTable() {
                         </span>
                       </div>
                     </td>
-                    <td className="py-3 px-2">
+                    <td className="py-2 px-2">
                       <span className="text-gray-600">
                         {family.mentor_email ? family.mentor_email.split('@')[0] : 'N/A'}
                       </span>
                     </td>
-                    <td className="py-3 px-2">
+                    <td className="py-2 px-2">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(family.status_aprovacao)}`}>
                         {family.status_aprovacao}
                       </span>
                     </td>
-                    <td className="py-3 px-2">
+                    <td className="py-2 px-2">
                       <div className="flex items-center gap-1">
                         <Users size={12} className="text-gray-400" />
                         <span className="text-gray-600">
@@ -402,20 +399,20 @@ export function FamiliesTable() {
                         </span>
                       </div>
                     </td>
-                    <td className="py-3 px-2">
+                    <td className="py-2 px-2">
                       <span className="text-gray-600">{family.income_range}</span>
                     </td>
-                    <td className="py-3 px-2">
+                    <td className="py-2 px-2">
                       <span className={`font-medium ${getScoreColor(family.poverty_score)}`}>
                         {family.poverty_score ? `${family.poverty_score}/10` : 'N/A'}
                       </span>
                     </td>
-                    <td className="py-3 px-2">
+                    <td className="py-2 px-2">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPovertyLevelColor(family.poverty_level)}`}>
                         {family.poverty_level || 'N/A'}
                       </span>
                     </td>
-                    <td className="py-3 px-2">
+                    <td className="py-2 px-2">
                       <div className="flex items-center gap-1">
                         <Calendar size={12} className="text-gray-400" />
                         <span className="text-gray-600">
@@ -426,7 +423,7 @@ export function FamiliesTable() {
                         </span>
                       </div>
                     </td>
-                    <td className="py-3 px-2">
+                    <td className="py-2 px-2">
                       <div className="flex justify-center">
                         <Dialog>
                           <DialogTrigger asChild>
