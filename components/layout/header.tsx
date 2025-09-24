@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { motion } from "framer-motion"
-import { LayoutGrid, Users, LogOut, Settings, Home, Loader2, ChevronDown, Plus, List } from "lucide-react"
+import { LayoutGrid, Users, LogOut, Settings, Home, Loader2, ChevronDown, Plus, List, BarChart3 } from "lucide-react"
 import { AuthService, useAuth } from "@/lib/auth"
 import { useState } from "react"
 
@@ -59,6 +59,9 @@ export function Header() {
           <nav className="hidden md:flex items-center space-x-2 rounded-full bg-gray-100/80 p-1">
             <NavItem href="/dashboard" icon={<LayoutGrid size={18} />}>
               Dashboard
+            </NavItem>
+            <NavItem href="/dashboard/dignometro" icon={<BarChart3 size={18} />}>
+              Dignômetro
             </NavItem>
             <FamiliesDropdown />
           </nav>
