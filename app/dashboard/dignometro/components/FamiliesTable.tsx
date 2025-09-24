@@ -138,6 +138,11 @@ export function FamiliesTable() {
   const { data: familiesData, isLoading, error } = useFamiliesTableData();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterAssessment, setFilterAssessment] = useState('all');
+  const [filterScore, setFilterScore] = useState('all');
+  const [filterChildren, setFilterChildren] = useState('all');
+  const [filterIncome, setFilterIncome] = useState('all');
+  const [filterLevel, setFilterLevel] = useState('all');
   const [selectedFamilyId, setSelectedFamilyId] = useState<string | null>(null);
 
   // Loading state
@@ -253,7 +258,88 @@ export function FamiliesTable() {
     
     const matchesStatus = filterStatus === 'all' || family.status_aprovacao === filterStatus;
     
-    return matchesSearch && matchesStatus;
+    // Filtro por avaliação
+    const matchesAssessment = filterAssessment === 'all' || 
+      (filterAssessment === 'avaliada' && family.poverty_score !== null) ||
+      (filterAssessment === 'nao-avaliada' && family.poverty_score === null);
+    
+    // Filtro por score
+    let matchesScore = true;
+    if (filterScore !== 'all' && family.poverty_score !== null) {
+      const score = family.poverty_score;
+      switch (filterScore) {
+        case 'excellent':
+          matchesScore = score >= 7.0;
+          break;
+        case 'good':
+          matchesScore = score >= 5.0 && score < 7.0;
+          break;
+        case 'regular':
+          matchesScore = score >= 3.0 && score < 5.0;
+          break;
+        case 'critical':
+          matchesScore = score < 3.0;
+          break;
+      }
+    } else if (filterScore !== 'all' && family.poverty_score === null) {
+      matchesScore = false;
+    }
+    
+    // Filtro por crianças
+    const matchesChildren = filterChildren === 'all' ||
+      (filterChildren === 'with-children' && family.children_count > 0) ||
+      (filterChildren === 'no-children' && family.children_count === 0);
+    
+    // Filtro por renda
+    let matchesIncome = true;
+    if (filterIncome !== 'all') {
+      const income = family.income_range?.toLowerCase() || '';
+      switch (filterIncome) {
+        case 'ate-1sm':
+          matchesIncome = income.includes('ate-1sm') || income.includes('ate_1_sm');
+          break;
+        case '1-2sm':
+          matchesIncome = income.includes('1-2sm');
+          break;
+        case '2-3sm':
+          matchesIncome = income.includes('2-3sm');
+          break;
+        case 'acima-3sm':
+          matchesIncome = income.includes('r$') && !income.includes('1-2sm') && !income.includes('2-3sm') && !income.includes('ate');
+          break;
+        case 'nao-informado':
+          matchesIncome = !family.income_range || family.income_range === 'N/A';
+          break;
+      }
+    }
+    
+    // Filtro por nível de pobreza
+    let matchesLevel = true;
+    if (filterLevel !== 'all') {
+      const level = family.poverty_level?.toLowerCase() || '';
+      switch (filterLevel) {
+        case 'prosperidade':
+          matchesLevel = level.includes('prosperidade');
+          break;
+        case 'quebra-ciclo':
+          matchesLevel = level.includes('quebra') || level.includes('ciclo');
+          break;
+        case 'dignidade':
+          matchesLevel = level.includes('dignidade');
+          break;
+        case 'pobreza':
+          matchesLevel = level.includes('pobreza') && !level.includes('extrema');
+          break;
+        case 'pobreza-extrema':
+          matchesLevel = level.includes('pobreza extrema');
+          break;
+        case 'nao-avaliado':
+          matchesLevel = !family.poverty_level;
+          break;
+      }
+    }
+    
+    return matchesSearch && matchesStatus && matchesAssessment && matchesScore && matchesChildren && matchesIncome && matchesLevel;
   });
 
   return (
@@ -274,28 +360,97 @@ export function FamiliesTable() {
               className="w-full"
             />
             
-            {/* Filtros tradicionais */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1">
-                <input
-                  type="text"
-                  placeholder="Ou busque na tabela por nome, cidade, estado..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
-                />
-              </div>
-              <div className="sm:w-48">
+            {/* Filtros rápidos por dimensões */}
+            <div className="space-y-2">
+              {/* Primeira linha de filtros */}
+              <div className="flex flex-wrap gap-2">
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="all">Todos os status</option>
-                  <option value="aprovado">Aprovado</option>
-                  <option value="pendente">Pendente</option>
-                  <option value="rejeitado">Rejeitado</option>
+                  <option value="all">📋 Todos os status</option>
+                  <option value="aprovado">✅ Aprovado</option>
+                  <option value="pendente">⏳ Pendente</option>
+                  <option value="rejeitado">❌ Rejeitado</option>
                 </select>
+                
+                <select
+                  value={filterAssessment}
+                  onChange={(e) => setFilterAssessment(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">🎯 Todas avaliações</option>
+                  <option value="avaliada">📊 Avaliada</option>
+                  <option value="nao-avaliada">📋 Não avaliada</option>
+                </select>
+                
+                <select
+                  value={filterScore}
+                  onChange={(e) => setFilterScore(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">⭐ Todos os scores</option>
+                  <option value="excellent">🟢 Excelente (≥7.0)</option>
+                  <option value="good">🟡 Bom (5.0-6.9)</option>
+                  <option value="regular">🟠 Regular (3.0-4.9)</option>
+                  <option value="critical">🔴 Crítico (&lt;3.0)</option>
+                </select>
+                
+                <select
+                  value={filterChildren}
+                  onChange={(e) => setFilterChildren(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">👶 Todas famílias</option>
+                  <option value="with-children">🧒 Com crianças</option>
+                  <option value="no-children">👥 Sem crianças</option>
+                </select>
+              </div>
+
+              {/* Segunda linha de filtros */}
+              <div className="flex flex-wrap gap-2">
+                <select
+                  value={filterIncome}
+                  onChange={(e) => setFilterIncome(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">💰 Todas as rendas</option>
+                  <option value="ate-1sm">💵 Até 1 SM</option>
+                  <option value="1-2sm">💰 1-2 SM</option>
+                  <option value="2-3sm">💎 2-3 SM</option>
+                  <option value="acima-3sm">🏆 Acima 3 SM</option>
+                  <option value="nao-informado">❓ Não informado</option>
+                </select>
+                
+                <select
+                  value={filterLevel}
+                  onChange={(e) => setFilterLevel(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="all">📊 Todos os níveis</option>
+                  <option value="prosperidade">🌟 Prosperidade</option>
+                  <option value="quebra-ciclo">📈 Quebra de Ciclo</option>
+                  <option value="dignidade">⚖️ Dignidade</option>
+                  <option value="pobreza">⚠️ Pobreza</option>
+                  <option value="pobreza-extrema">🚨 Pobreza Extrema</option>
+                  <option value="nao-avaliado">❓ Não avaliado</option>
+                </select>
+                
+                <button
+                  onClick={() => {
+                    setFilterStatus('all');
+                    setFilterAssessment('all');
+                    setFilterScore('all');
+                    setFilterChildren('all');
+                    setFilterIncome('all');
+                    setFilterLevel('all');
+                    setSelectedFamilyId(null);
+                  }}
+                  className="px-3 py-2 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200 transition-colors"
+                >
+                  🔄 Limpar filtros
+                </button>
               </div>
             </div>
 
@@ -321,7 +476,7 @@ export function FamiliesTable() {
           </div>
 
           {/* Estatísticas rápidas */}
-          <div className="grid grid-cols-4 gap-2 py-2 bg-gray-50 rounded-lg">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 py-2 bg-gray-50 rounded-lg">
             <div className="text-center">
               <p className="text-sm font-bold text-blue-600">
                 {familiesData.length}
@@ -339,6 +494,18 @@ export function FamiliesTable() {
                 {familiesData.filter(f => f.poverty_score !== null).length}
               </p>
               <p className="text-xs text-gray-600">Avaliadas</p>
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-bold text-orange-600">
+                {familiesData.filter(f => f.children_count > 0).length}
+              </p>
+              <p className="text-xs text-gray-600">C/ Crianças</p>
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-bold text-indigo-600">
+                {familiesData.filter(f => f.income_range && f.income_range !== 'N/A').length}
+              </p>
+              <p className="text-xs text-gray-600">C/ Renda</p>
             </div>
             <div className="text-center">
               <p className="text-sm font-bold text-purple-600">
