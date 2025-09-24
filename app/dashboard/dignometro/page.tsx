@@ -4,6 +4,13 @@ import { Header } from '@/components/layout/header';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useDignometroData } from './hooks/useDignometroData';
 import { DignometroStats } from './components/DignometroStats';
+import { PovertyLevelChart } from './components/PovertyLevelChart';
+import { TimelineChart } from './components/TimelineChart';
+import { DimensionChart } from './components/DimensionChart';
+import { MentorRanking } from './components/MentorRanking';
+import { GeographicChart } from './components/GeographicChart';
+import { GoalsMatrix } from './components/GoalsMatrix';
+import { FamiliesTable } from './components/FamiliesTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 
@@ -50,35 +57,32 @@ function DignometroDashboardContent() {
         </div>
       )}
 
-      {/* Stats */}
-      {!isLoading && (
-        <>
-          <DignometroStats families={families} />
+          {/* Stats */}
+          {!isLoading && (
+            <>
+              <DignometroStats />
 
-          {/* Placeholder para outros componentes */}
+              {/* Tabela de Famílias */}
+              <FamiliesTable />
+
+              {/* Gráficos e componentes */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gráfico de Níveis (Em Breve)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
-                  <p className="text-gray-500">Gráfico de distribuição por níveis</p>
-                </div>
-              </CardContent>
-            </Card>
+            <PovertyLevelChart />
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Timeline (Em Breve)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
-                  <p className="text-gray-500">Timeline de evolução</p>
-                </div>
-              </CardContent>
-            </Card>
+            <TimelineChart />
           </div>
+
+          {/* Análise de Dimensões */}
+          <DimensionChart />
+
+          {/* Ranking de Mentores */}
+          <MentorRanking />
+
+          {/* Mapa Geográfico */}
+          <GeographicChart />
+
+          {/* Matriz de Metas */}
+          <GoalsMatrix />
 
           {/* Debug info (remova em produção) */}
           <Card>
