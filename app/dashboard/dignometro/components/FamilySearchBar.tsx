@@ -128,8 +128,8 @@ export function FamilySearchBar({
             </div>
             {families.map((family) => (
               <button
-                key={family.family_id}
-                onClick={() => handleFamilyClick(family.family_id)}
+                key={family.id}
+                onClick={() => handleFamilyClick(family.id)}
                 className="w-full px-3 py-3 hover:bg-gray-50 transition-colors text-left border-b border-gray-100 last:border-b-0"
               >
                 <div className="flex items-start justify-between">
@@ -137,7 +137,7 @@ export function FamilySearchBar({
                     <div className="flex items-center gap-2 mb-1">
                       <Users size={16} className="text-blue-600 flex-shrink-0" />
                       <h4 className="text-sm font-medium text-gray-900 truncate">
-                        {family.family_name}
+                        {family.name}
                       </h4>
                     </div>
                     
@@ -154,28 +154,18 @@ export function FamilySearchBar({
                         </div>
                       )}
                       
-                      {family.assessment_date && (
+                      {family.cpf && (
                         <div className="flex items-center gap-2 text-xs text-gray-600">
-                          <Calendar size={12} />
-                          <span>Última aval.: {new Date(family.assessment_date).toLocaleDateString('pt-BR')}</span>
+                          <span>CPF: {family.cpf}</span>
                         </div>
                       )}
                     </div>
                   </div>
                   
                   <div className="flex flex-col items-end gap-1 ml-3">
-                    {family.poverty_score && (
-                      <span className={`text-sm font-medium ${getScoreColor(family.poverty_score)}`}>
-                        {family.poverty_score}/10
-                      </span>
-                    )}
-                    {family.poverty_level && (
-                      <span className={`text-xs px-2 py-1 rounded-full bg-gray-100 ${getPovertyLevelColor(family.poverty_level)}`}>
-                        {family.poverty_level === 'quebra de ciclo da pobreza' ? 'Quebra Ciclo' :
-                         family.poverty_level === 'prosperidade em desenvolvimento' ? 'Prosperidade' :
-                         family.poverty_level}
-                      </span>
-                    )}
+                    <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
+                      {family.status_aprovacao}
+                    </span>
                   </div>
                 </div>
               </button>

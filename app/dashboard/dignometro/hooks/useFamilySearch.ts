@@ -2,19 +2,16 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { supabaseBrowserClient } from '@/lib/supabase/browser';
 import Fuse from 'fuse.js';
 
 interface FamilySearchResult {
-  family_id: string;
-  family_name: string;
+  id: string;
+  name: string;
   city: string;
   state: string;
   mentor_email: string | null;
-  poverty_score: number | null;
-  poverty_level: string | null;
-  assessment_date: string | null;
   cpf: string | null;
+  status_aprovacao: string;
 }
 
 export const useFamilySearch = (query: string) => {
@@ -24,23 +21,14 @@ export const useFamilySearch = (query: string) => {
   const { isLoading } = useQuery({
     queryKey: ['all-families-for-search'],
     queryFn: async (): Promise<FamilySearchResult[]> => {
-      const supabase = supabaseBrowserClient;
-      const { data, error } = await supabase
-        .from('dignometro_dashboard')
-        .select(`
-          family_id,
-          family_name,
-          city,
-          state,
-          mentor_email,
-          poverty_score,
-          poverty_level,
-          assessment_date,
-          cpf
-        `)
-        .order('family_name');
+      // Usar API route para acessar dados com service role
+      const response = await fetch('/api/families/search');
       
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar famílias: ${response.status}`);
+      }
+      
+      const data = await response.json();
       setAllFamilies(data);
       return data;
     },
@@ -53,7 +41,7 @@ export const useFamilySearch = (query: string) => {
     
     const fuse = new Fuse(allFamilies, {
       keys: [
-        { name: 'family_name', weight: 0.4 },
+        { name: 'name', weight: 0.4 },
         { name: 'cpf', weight: 0.3 },
         { name: 'city', weight: 0.2 },
         { name: 'mentor_email', weight: 0.1 }

@@ -98,9 +98,10 @@ function FamilyDetailsModal({ familyId, familyName }: { familyId: string; family
           <div className="space-y-2">
             {details.members.map((member, index) => (
               <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                <p className="font-medium">{member.name}</p>
+                <p className="font-medium">{member.nome}</p>
                 <p className="text-sm text-gray-600">
-                  {member.relationship} • {member.age} anos
+                  {member.relacao_familia} • {member.idade} anos
+                  {member.is_responsavel && <span className="ml-2 text-blue-600">(Responsável)</span>}
                 </p>
               </div>
             ))}
