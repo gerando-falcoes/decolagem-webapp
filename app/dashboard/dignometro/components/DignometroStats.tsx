@@ -1,43 +1,56 @@
 "use client";
 
 import { Card, CardContent } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Users, AlertTriangle } from 'lucide-react';
-import { DashboardFamily } from '../types/dashboard';
+import { TrendingUp, TrendingDown, Users, AlertTriangle, Loader2 } from 'lucide-react';
+import { useKPIData } from '../hooks/useKPIData';
 
-interface DignometroStatsProps {
-  families: DashboardFamily[];
-}
+export function DignometroStats() {
+  const { data: kpiData, isLoading, error } = useKPIData();
 
-export function DignometroStats({ families }: DignometroStatsProps) {
-  // Calcular métricas
-  const totalFamilies = families.length;
-  
-  // Filtrar famílias que têm avaliação
-  const familiesWithAssessment = families.filter(f => f.poverty_score !== null);
-  const avgScore = familiesWithAssessment.length > 0 
-    ? familiesWithAssessment.reduce((sum, f) => sum + (f.poverty_score || 0), 0) / familiesWithAssessment.length 
-    : 0;
-  
-  const criticalFamilies = families.filter(f => 
-    f.poverty_level === 'pobreza extrema' || f.poverty_level === 'pobreza'
-  ).length;
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 gap-3">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i} className="hover:shadow-sm transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-center h-12">
+                <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
-  const successfulFamilies = families.filter(f => 
-    f.poverty_level === 'quebra de ciclo da pobreza' || 
-    f.poverty_level === 'prosperidade em desenvolvimento'
-  ).length;
+  // Error state
+  if (error) {
+    return (
+      <div className="grid grid-cols-1 gap-3">
+        <Card className="col-span-full">
+          <CardContent className="p-4 text-center">
+            <AlertTriangle className="h-6 w-6 text-red-500 mx-auto mb-2" />
+            <p className="text-sm text-red-600">Erro ao carregar KPIs</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!kpiData) return null;
 
   const stats = [
     {
       title: 'Total de Famílias',
-      value: totalFamilies,
+      value: kpiData.totalFamilies,
       icon: Users,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50'
     },
     {
       title: 'Pontuação Média',
-      value: avgScore.toFixed(1),
+      value: kpiData.avgScore,
       suffix: '/10',
       icon: TrendingUp,
       color: 'text-green-600',
@@ -45,14 +58,14 @@ export function DignometroStats({ families }: DignometroStatsProps) {
     },
     {
       title: 'Famílias Críticas',
-      value: criticalFamilies,
+      value: kpiData.criticalFamilies,
       icon: AlertTriangle,
       color: 'text-red-600',
       bgColor: 'bg-red-50'
     },
     {
       title: 'Em Prosperidade',
-      value: successfulFamilies,
+      value: kpiData.successfulFamilies,
       icon: TrendingUp,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50'
@@ -60,24 +73,24 @@ export function DignometroStats({ families }: DignometroStatsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 gap-3">
       {stats.map((stat, index) => (
-        <Card key={index} className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
+        <Card key={index} className="hover:shadow-sm transition-shadow">
+          <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">
+                <p className="text-xs font-medium text-gray-600 mb-1">
                   {stat.title}
                 </p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-xl font-bold text-gray-900">
                   {stat.value}
-                  <span className="text-sm text-gray-500 ml-1">
+                  <span className="text-xs text-gray-500 ml-1">
                     {stat.suffix}
                   </span>
                 </p>
               </div>
-              <div className={`p-3 rounded-full ${stat.bgColor}`}>
-                <stat.icon className={`h-6 w-6 ${stat.color}`} />
+              <div className={`p-2 rounded-full ${stat.bgColor}`}>
+                <stat.icon className={`h-5 w-5 ${stat.color}`} />
               </div>
             </div>
           </CardContent>
